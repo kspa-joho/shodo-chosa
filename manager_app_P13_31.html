@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>被災状況調査アプリ 統合管理版 (Phase 13.31)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>:root {
+    --primary-color: #2c3e50;
+    --accent-color: #3498db;
+    --bg-color: #f4f7f6;
+    --app-max-width: 480px;
+    --danger-color: #c0392b;
+    --success-color: #27ae60;
+}
+
+body { margin: 0; padding: 0; background-color: #666; font-family: sans-serif; display: block; height: 100vh; overflow: hidden; }
+
+/* ヘッダーとロゴ */
+.app-header { background-color: var(--primary-color); color: white; padding: 8px 15px; position: sticky; top: 0; z-index: 1000; }
+.header-inner { display: flex; align-items: center; justify-content: space-between; }
+.header-top { display: flex; align-items: center; gap: 8px; }
+.app-title { font-size: 1.1rem !important; margin: 0; display: flex; align-items: center; gap: 8px; }
+.app-title::after { content: ""; opacity: 0.9; } 
+.app-logo { height: 1.2em !important; width: auto; vertical-align: middle; }
+
+.header-tabs { display: flex; gap: 4px; }
+.tab-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 4px 12px; cursor: pointer; border-radius: 3px; font-size: 0.8rem; }
+.tab-btn.active { background: var(--accent-color); font-weight: bold; }
+
+/* 3カラムレイアウト */
+#app-container { max-width: none; width: 100vw; height: 100vh; display: flex; flex-direction: column; background: #fff; }
+.individual-layout { display: flex; flex: 1; overflow: hidden; }
+#map-side { flex: 1; border-right: 1px solid #ccc; position: relative; background: #eee; }
+
+/* リストエリア */
+#list-side { width: 320px; border-right: 1px solid #ccc; display: flex; flex-direction: column; background: #f8f9fa; }
+.list-header { background: var(--primary-color); color: white; padding: 10px 15px; font-size: 0.85rem; font-weight: bold; flex-shrink: 0; }
+.data-list { flex: 1; overflow-y: auto; }
+
+/* ドロップゾーン */
+.drop-zone { 
+    height: 40px; 
+    border: 2px dashed var(--accent-color); 
+    margin: 8px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 0.75rem; 
+    color: var(--accent-color); 
+    background: #f0f8ff; 
+    cursor: pointer; 
+    border-radius: 4px; 
+    flex-shrink: 0; 
+}
+
+/* リストアイテム */
+.data-item { padding: 5px 12px; border-bottom: 1px solid #eee; cursor: pointer; line-height: 1.2; }
+.data-item:hover { background: #f1f1f1; }
+.data-item.active { background: #eaf4fb; border-left: 6px solid var(--accent-color); }
+.data-item strong { font-size: 0.85rem; color: #333; display: block; }
+.data-item small { color: #888; display: block; margin-top: 2px; font-size: 0.7rem; }
+
+/* 編集パネル */
+#edit-side { width: 450px; border-right: 1px solid #ccc; display: flex; flex-direction: column; background: #fff; overflow-y: auto; }
+.detail-group { background: #fff; border: 1px solid #ddd; border-radius: 5px; margin: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); overflow: hidden; }
+.detail-group-title { background: #e9ecef; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; color: #495057; border-bottom: 1px solid #ddd; }
+.detail-table { width: 100%; border-collapse: collapse; }
+.detail-table td { padding: 6px 12px; font-size: 0.8rem; border-bottom: 1px solid #f1f3f5; }
+.detail-label { color: #6c757d; width: 120px; font-weight: bold; }
+.detail-table input, .detail-table select, .detail-table textarea { width: 100%; padding: 4px; border: 1px solid #ced4da; border-radius: 3px; font-size: 0.85rem; }
+
+/* アクションボタン */
+.edit-actions { 
+    padding: 15px; 
+    border-top: 2px solid #ddd; 
+    background: #f8f9fa; 
+    display: flex; 
+    flex-direction: row; 
+    gap: 10px; 
+}
+.btn-main { 
+    flex: 1; 
+    padding: 12px 5px; 
+    border: none; 
+    border-radius: 5px; 
+    color: white; 
+    font-weight: bold; 
+    cursor: pointer; 
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* データベース画面 */
+.db-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; }
+.db-table th { position: sticky; top: 0; background: #eee; padding: 8px; border: 1px solid #ddd; z-index: 5; cursor: pointer; }
+.db-table td { border: 1px solid #ddd; padding: 4px; }
+.btn-batch-print { background-color: var(--danger-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+.btn-a3-output { background-color: #2980b9; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+.btn-csv-total { background-color: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+/* 進捗・タブ制御 */
+.tab-content { display: none !important; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex !important; flex-direction: column; }
+#progress-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+.progress-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 320px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+
+/* --- 設定モーダル（フローティングパネル） --- */
+/* 背景マスクなし、右下配置 */
+#config-modal { 
+    display: none; 
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    z-index: 9000; /* マップ(z=0)より上、メニューより上 */
+    /* width/heightの強制指定を解除 */
+    background: transparent; 
+}
+.config-box { 
+    background: rgba(255, 255, 255, 0.95); /* 少し透過 */
+    padding: 20px; 
+    border-radius: 8px; 
+    width: 320px; 
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
+    border: 1px solid #ccc;
+}
+.config-row { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+.config-row label { font-weight: bold; color: #333; }
+.config-btns { display: flex; gap: 10px; margin-top: 15px; }
+
+/* --- Leaflet マーカー色制御 --- */
+img.marker-red {
+    filter: hue-rotate(150deg) saturate(1.2) brightness(0.95);
+}
+
+@media print {
+    @page { margin: 0; }
+    .print-page-a4 { width: 210mm; height: 297mm; page-break-after: always; overflow: hidden; position: relative; }
+    .print-page-a3 { width: 420mm; height: 297mm; page-break-after: always; overflow: hidden; position: relative; }
+    svg { width: 100%; height: 100%; display: block; }
+}</style>
+</head>
+<body>
+    <div id="app-container">
+        <header class="app-header">
+    <div class="header-inner">
+        <div class="header-top">
+            <h1 class="app-title">被災状況調査アプリ 統合管理版</h1>
+            <img src="data:image/png;base64,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" alt="Logo" class="app-logo">
+        </div>
+        <nav class="header-tabs">
+            <button class="tab-btn active" data-target="content-individual">個別</button>
+            <button class="tab-btn" data-target="content-database">データベース</button>
+            <button class="tab-btn" data-target="content-spec">開発方針</button>
+        </nav>
+    </div>
+</header>
+        
+        <section id="content-individual" class="tab-content active">
+            <div class="individual-layout">
+                <div id="map-side"><div id="map" style="height: 100%; width: 100%;"></div></div>
+                <div id="list-side">
+                    <div class="drop-zone" id="drop-zone">JZIPドロップで追加</div>
+                    <div class="list-header">取込箇所リスト <span id="list-count">0</span></div>
+                    <div class="data-list" id="data-list"></div>
+                </div>
+                <div id="edit-side">
+                    <div id="edit-panel"></div>
+                    <div class="edit-actions" id="edit-actions" style="display:none; padding:15px; border-top:1px solid #ddd;">
+                        <button class="btn-main" style="background:#c0392b;" onclick="managerApp.generateReport()">帳票PDF出力</button>
+                        <button class="btn-main" style="background:#27ae60;" onclick="managerApp.exportSingleJZip()">現在のデータをJZIP保存</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="content-database" class="tab-content">
+            <div style="padding:15px; flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+                    <select id="db-search-field" class="detail-table" style="width:auto; height:32px;" onchange="managerApp.renderDatabase()">
+                        <option value="all">全項目</option>
+                    </select>
+                    <input type="text" id="db-search" class="input-group" style="flex:1; height:32px;" placeholder="検索キーワード..." oninput="managerApp.renderDatabase()">
+                    
+                    <button class="btn-batch-print" onclick="managerApp.batchPrint()">一括印刷</button>
+                    <button class="btn-a3-output" onclick="managerApp.startGlobalMapMode()">全体図出力</button>
+                    
+                    <div style="display:flex; border:1px solid #aaa; border-radius:4px; overflow:hidden;">
+                        <select id="export-type" style="border:none; padding:0 5px; height:32px; background:#eee;">
+                            <option value="csv">統合CSV</option>
+                            <option value="geojson">GeoJSON (地理院/GIS)</option>
+                            <option value="kml">KML (GoogleEarth)</option>
+                        </select>
+                        <button class="btn-csv-total" style="border-radius:0; height:32px; margin:0;" onclick="managerApp.executeExport()">出力</button>
+                    </div>
+                </div>
+                <div style="flex:1; overflow:auto; border:1px solid #ddd; background:#fff;">
+                    <table class="db-table">
+                        <thead id="db-thead"></thead><tbody id="db-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="content-spec" class="tab-content"><div style="padding:20px; overflow-y:auto;"><div class="spec-container">
+    <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
+        <h2>被災状況調査システム 開発仕様書 (Phase 13.31)</h2>
+        <p><strong>Last Updated:</strong> Phase 13.31 (Auto Word-Wrap in SVG)</p>
+        <p><strong>Status:</strong> App A (Stable) / App B (Development)</p>
+    </header>
+
+    <section>
+        <h3>1. プロジェクト背景と目的</h3>
+        <p>大規模災害時、通信遮断下にある現場から、確実に被害状況（パッション）を事務所へ届けるための建設コンサルタント専用ツール。</p>
+        <ul>
+            <li><strong>Local-First:</strong> サーバー・DB不要。ブラウザとHTMLファイル単体で動作する。</li>
+            <li><strong>Bucket Relay:</strong> データ連携は物理的なファイル移動（JZIP形式）で行う。</li>
+            <li><strong>Resilience:</strong> 意匠よりも、数千件のデータを扱っても落ちない堅牢性を最優先する。</li>
+        </ul>
+    </section>
+
+    <section>
+        <h3>2. 開発運用ルール（SSOT）</h3>
+        <ul>
+            <li><strong>Phase管理:</strong> 会議の局面管理番号（X.X）。dist出力ファイル名および本仕様書のバージョンとして使用する。</li>
+            <li><strong>永遠のβ版:</strong> 現場フィードバックにより開発は永続する。「完成」と決めつけない。</li>
+            <li><strong>Spec as Code:</strong> 本ファイル (<code>src/spec.html</code>) はプロジェクトの唯一の正解情報（Single Source of Truth）である。</li>
+        </ul>
+    </section>
+
+    <section>
+        <h3>3. ファイル構成 (File Manifest)</h3>
+        <p><code>src/</code> フォルダ内のリソースを <code>build.js</code> が結合し、<code>dist/</code> に単一HTMLを出力する。</p>
+        <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;" border="1">
+            <tr style="background:#eee;"><th>Filename</th><th>Role</th><th>Note</th></tr>
+            <tr><td><code>build.js</code></td><td>ビルドスクリプト</td><td>App B (管理版) 専用の生成ロジックを保持</td></tr>
+            <tr><td><code>pc_manager.html.template</code></td><td>App B 骨格</td><td>3カラムレイアウト、PC操作用UI</td></tr>
+            <tr><td><code>style.css</code></td><td>共通スタイル</td><td>レスポンシブ対応、印刷レイアウト定義</td></tr>
+            <tr><td><code>header.html</code></td><td>共通ヘッダー</td><td>ロゴ、タブ切り替えUI</td></tr>
+            <tr><td><code>spec.html</code></td><td>開発仕様書</td><td>本ファイル（アプリ内「開発方針」タブに埋め込み）</td></tr>
+            <tr><td><code>2_script_core.js</code></td><td>App B Logic</td><td>フィールド定義、個別詳細表示、初期化</td></tr>
+            <tr><td><code>2_script_db.js</code></td><td>App B Logic</td><td>リスト描画、ソート、検索フィルタ</td></tr>
+            <tr><td><code>2_script_import.js</code></td><td>App B Logic</td><td>JZIPインポート（座標自動抽出）、エクスポート</td></tr>
+            <tr><td><code>2_script_report.js</code></td><td>App B Logic</td><td>帳票生成、Canvas地図キャプチャ、印刷制御</td></tr>
+            <tr><td><code>report_p1~3.svg</code></td><td>帳票テンプレート</td><td>正確な寸法で作成されたSVG帳票枠</td></tr>
+            <tr><td><code>rogo-AAA.txt</code></td><td>ロゴデータ</td><td>Base64エンコードされた画像文字列</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h3>4. 実装仕様とアーキテクチャ</h3>
+        
+        <h4>4.1 データ構造 (JZIP)</h4>
+        <p>JSONデータと写真画像をZIP圧縮した独自形式。<code>_key</code> (会社ID_整理番号_タイムスタンプ) で一意管理。</p>
+
+        <h4>4.2 App B (統合管理版) の仕様</h4>
+        <ul>
+            <li><strong>帳票出力ロジック (SVG Update):</strong>
+                <ul>
+                    <li><strong>自動折り返し機能:</strong> SVG出力時、入力されたテキストが枠の幅を超える場合は <code>foreignObject</code> を用いてHTMLの <code>div</code> 要素として展開し、自動的な折り返し（Word-Wrap）を行う。</li>
+                    <li><strong>はみ出し防止:</strong> 枠の高さを超える長文は、安全のため <code>overflow: hidden</code> により不可視化される。</li>
+                </ul>
+            </li>
+            <li><strong>データベース機能:</strong> JZIPインポート時、<code>mainGeom</code> から「起点・終点座標」を自動抽出。</li>
+            <li><strong>全体図出力設定:</strong> 見たままの構図（WYSIWYG）を高画質PNGで出力可能。</li>
+        </ul>
+    </section>
+</div></div></section>
+    </div>
+
+    <!-- 進捗オーバーレイ -->
+    <div id="progress-overlay">
+        <div class="progress-box">
+            <div class="spinner"></div>
+            <div id="progress-msg" style="font-weight:bold;">処理中...</div>
+            <div id="progress-count" style="margin-top:10px; font-size:0.9rem; color:#666;"></div>
+            <button class="btn-sub" style="margin-top:20px; background:#666; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="managerApp.abortProcess()">処理を中止する</button>
+        </div>
+    </div>
+
+    <!-- 全体図出力設定パネル (フローティング) -->
+    <div id="config-modal">
+        <div class="config-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:1rem;">全体図 出力設定</h3>
+                <button onclick="managerApp.closeA3Config()" style="border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
+            </div>
+            
+            <p style="font-size:0.8rem; color:#666; margin-bottom:15px;">
+                地図を操作(ズーム/移動)して構図を決めてください。<br>
+                チェックされた箇所のみ表示中。
+            </p>
+
+            <div class="config-row">
+                <label>出力解像度 (高さ)</label>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="number" id="cfg-height" value="2000" step="100" style="width:80px; padding:5px; text-align:right;">
+                    <span style="font-size:0.8rem; color:#666;">px</span>
+                </div>
+            </div>
+            
+            <!-- 追加: ラベル項目選択 -->
+            <div class="config-row">
+                <label>ラベル項目</label>
+                <select id="cfg-label-field" style="width:130px; padding:2px;"></select>
+            </div>
+
+            <div class="config-row">
+                <label>文字サイズ倍率</label>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="number" id="cfg-font" value="1.0" step="0.1" min="0.1" style="width:60px; padding:5px; text-align:right;">
+                    <span style="font-size:0.8rem; color:#666;">倍 (基準:5px)</span>
+                </div>
+            </div>
+
+            <div class="config-row">
+                <label>方位記号 (N)</label>
+                <input type="checkbox" id="cfg-compass" checked>
+            </div>
+
+            <div class="config-row">
+                <label>スケールバー</label>
+                <input type="checkbox" id="cfg-scale" checked>
+            </div>
+
+            <div class="config-btns">
+                <button class="btn-sub" style="flex:1;" onclick="managerApp.closeA3Config()">キャンセル</button>
+                <button class="btn-a3-output" style="flex:1;" onclick="managerApp.execA3Output()">出力 (PNG)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="svg-templates">
+        <div id="tpl-p1"><?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="レイヤー_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
+	 y="0px" width="595.279px" height="841.89px" viewBox="0 0 595.279 841.89" enable-background="new 0 0 595.279 841.89"
+	 xml:space="preserve">
+<g id="枠">
+	
+		<rect id="枠_21_" x="419.531" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="119.058" height="18.908"/>
+	
+		<rect id="枠_20_" x="360.006" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="59.525" height="18.908"/>
+	
+		<rect id="枠_19_" x="56.693" y="42.52" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="481.896" height="19.843"/>
+	
+		<rect id="枠_18_" x="56.693" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_17_" x="56.693" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_16_" x="56.693" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_15_" x="56.693" y="104.882" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_14_" x="56.693" y="119.056" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="85.04"/>
+	
+		<rect id="枠_13_" x="56.693" y="204.095" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="56.693"/>
+	
+		<rect id="枠_12_" x="56.693" y="261.192" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="438.966"/>
+	
+		<rect id="枠_11_" x="56.693" y="700.158" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="56.691"/>
+	
+		<rect id="枠_10_" x="56.693" y="756.851" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="42.52"/>
+	
+		<rect id="枠_9_" x="146.834" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="14.173"/>
+	
+		<rect id="枠_8_" x="146.834" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="14.173"/>
+	
+		<rect id="枠_7_" x="146.834" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="14.173"/>
+	
+		<rect id="枠_6_" x="146.834" y="104.882" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="14.173"/>
+	
+		<rect id="枠_5_" x="146.834" y="119.056" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="85.04"/>
+	
+		<rect id="枠_4_" x="146.834" y="204.095" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="56.693"/>
+	
+		<rect id="枠_3_" x="146.834" y="261.192" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="438.874"/>
+	
+		<rect id="枠_2_" x="146.834" y="700.158" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="56.691"/>
+	
+		<rect id="枠_1_" x="146.834" y="756.851" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.754" height="42.52"/>
+</g>
+<g id="固定文字">
+	<text id="固定文字_40_" transform="matrix(1 0 0 1 365.7693 37.3315)" font-family="'MS-Gothic'" font-size="12">整理番号</text>
+	
+		<text id="固定文字_39_" transform="matrix(1 0 0 1 136.2542 59.9067)" font-family="'MS-Gothic'" font-size="18.9925" letter-spacing="11">被災状況調査票</text>
+	<text id="固定文字_38_" transform="matrix(1 0 0 1 360.0046 59.9067)" font-family="'MS-Gothic'" font-size="13">(1/2)</text>
+	<rect x="65.5" y="63.979" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 72.814)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">災害番</text>
+	<text transform="matrix(1 0 0 1 126.3333 72.814)" font-family="'MS-Gothic'" font-size="9.9213">号</text>
+	<rect x="65.5" y="78.153" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 86.9858)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="18">所属</text>
+	<text transform="matrix(1 0 0 1 126.3333 86.9858)" font-family="'MS-Gothic'" font-size="9.9213">名</text>
+	<rect x="65.5" y="92.326" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 101.1597)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">被災場</text>
+	<text transform="matrix(1 0 0 1 126.3333 101.1597)" font-family="'MS-Gothic'" font-size="9.9213">所</text>
+	<rect x="65.5" y="106.499" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 115.3335)" font-family="'MS-Gothic'" font-size="9.9213">路</text>
+	<text transform="matrix(1 0 0 1 75.7478 115.3335)" font-family="'MS-Gothic'" font-size="9.9213">線・</text>
+	<text transform="matrix(1 0 0 1 95.5896 115.3335)" font-family="'MS-Gothic'" font-size="9.9213">河川名</text>
+	<text transform="matrix(1 0 0 1 126.3333 115.3335)" font-family="'MS-Gothic'" font-size="9.9213">等</text>
+	<rect x="65.5" y="149.019" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 157.5464)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="2">(</text>
+	<text transform="matrix(1 0 0 1 75.4211 157.853)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="3">コメン</text>
+	<text transform="matrix(1 0 0 1 121.3718 157.853)" font-family="'MS-Gothic'" font-size="9.9213">ト</text>
+	<text transform="matrix(1 0 0 1 131.2927 157.853)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">）</text>
+	<rect x="65.5" y="163.191" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 172.0249)" font-family="'MS-Gothic'" font-size="9.9213">及び想定され</text>
+	<text transform="matrix(1 0 0 1 126.3333 172.0249)" font-family="'MS-Gothic'" font-size="9.9213">る</text>
+	<rect x="65.5" y="177.365" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 186.1987)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">被災原</text>
+	<text transform="matrix(1 0 0 1 126.3333 186.1987)" font-family="'MS-Gothic'" font-size="9.9213">因</text>
+	<rect x="65.5" y="234.052" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 242.8862)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">の可能</text>
+	<text transform="matrix(1 0 0 1 126.3333 242.8862)" font-family="'MS-Gothic'" font-size="9.9213">性</text>
+	<rect x="65.5" y="489.177" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 498.0112)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">被災状</text>
+	<text transform="matrix(1 0 0 1 126.3333 498.0112)" font-family="'MS-Gothic'" font-size="9.9213">況</text>
+	<rect x="65.5" y="715.949" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 724.7817)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">特記事</text>
+	<text transform="matrix(1 0 0 1 126.3333 724.7817)" font-family="'MS-Gothic'" font-size="9.9213">項</text>
+	<rect x="167.009" y="708.154" fill="none" width="11.598" height="12.557"/>
+	<text id="固定文字_27_" transform="matrix(1 0 0 1 167.009 716.6812)" font-family="'MS-Gothic'" font-size="9.9213">有</text>
+	<rect x="197.086" y="708.154" fill="none" width="11.598" height="12.557"/>
+	<text id="固定文字_26_" transform="matrix(1 0 0 1 197.0867 716.6812)" font-family="'MS-Gothic'" font-size="9.9213">無</text>
+	<rect x="231.212" y="708.154" fill="none" width="31.553" height="12.557"/>
+	<text transform="matrix(1 0 0 1 231.2122 716.9878)" font-family="'MS-Gothic'" font-size="9.9213">状況</text>
+	<text transform="matrix(1 0 0 1 251.0544 716.9878)" font-family="'MS-Gothic'" font-size="9.9213">：</text>
+	<rect x="167.009" y="213.606" fill="none" width="11.598" height="12.557"/>
+	<text id="固定文字_24_" transform="matrix(1 0 0 1 167.009 222.1323)" font-family="'MS-Gothic'" font-size="9.9213">有</text>
+	<rect x="151.5" y="234.052" fill="none" width="379.501" height="12.557"/>
+	<text transform="matrix(1 0 0 1 151.5002 242.5776)" font-family="'MS-Gothic'" font-size="9.9213">※有りの場合は、至急所管事務所へ連絡を行い、県職員の出動を要請すること</text>
+	<text transform="matrix(1 0 0 1 498.7439 242.8862)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">。</text>
+	<rect x="151.5" y="120.672" fill="none" width="35.377" height="12.557"/>
+	<text id="固定文字_22_" transform="matrix(1 0 0 1 151.5002 129.1987)" font-family="'MS-Gothic'" font-size="9.9213">被災日</text>
+	<rect x="151.5" y="134.846" fill="none" width="237.628" height="12.557"/>
+	<text transform="matrix(1 0 0 1 151.5002 143.6792)" font-family="'MS-Gothic'" font-size="9.9213">被災状況（概要：延</text>
+	<text transform="matrix(1 0 0 1 240.7917 143.6792)" font-family="'MS-Gothic'" font-size="9.9213">長,</text>
+	<text transform="matrix(1 0 0 1 260.6355 143.6792)" font-family="'MS-Gothic'" font-size="9.9213">高</text>
+	<text transform="matrix(1 0 0 1 270.5564 143.6792)" font-family="'MS-Gothic'" font-size="9.9213">さ,</text>
+	<text transform="matrix(1 0 0 1 290.3992 143.6792)" font-family="'MS-Gothic'" font-size="9.9213">被災人家数等を記入</text>
+	<text transform="matrix(1 0 0 1 379.6912 143.6792)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">）</text>
+	<rect x="151.5" y="149.019" fill="none" width="12.626" height="12.557"/>
+	<text id="固定文字_20_" transform="matrix(1 0 0 1 151.5002 157.5464)" font-family="'MS-Gothic'" font-size="9.9213">L=</text>
+	<rect x="205.42" y="149.019" fill="none" width="12.626" height="12.557"/>
+	<text id="固定文字_19_" transform="matrix(1 0 0 1 205.4202 157.5464)" font-family="'MS-Gothic'" font-size="9.9213">m</text>
+	<rect x="151.5" y="163.191" fill="none" width="12.626" height="12.557"/>
+	<text id="固定文字_18_" transform="matrix(1 0 0 1 151.5002 171.7192)" font-family="'MS-Gothic'" font-size="9.9213">H=</text>
+	<rect x="205.42" y="163.191" fill="none" width="12.626" height="12.557"/>
+	<text id="固定文字_17_" transform="matrix(1 0 0 1 205.4202 171.7192)" font-family="'MS-Gothic'" font-size="9.9213">m</text>
+	<rect x="151.5" y="248.636" fill="none" width="379.501" height="12.557"/>
+	<text transform="matrix(1 0 0 1 151.5002 257.4702)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">　</text>
+	<text transform="matrix(1 0 0 1 156.4607 257.4702)" font-family="'MS-Gothic'" font-size="9.9213">（調査は、県職員到着後、その指示に従うこと</text>
+	<text transform="matrix(1 0 0 1 364.8113 257.4702)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">）</text>
+	<rect x="197.086" y="213.606" fill="none" width="11.598" height="12.557"/>
+	<text id="固定文字_15_" transform="matrix(1 0 0 1 197.0867 222.1323)" font-family="'MS-Gothic'" font-size="9.9213">無</text>
+	<rect x="231.212" y="213.606" fill="none" width="31.553" height="12.557"/>
+	<text transform="matrix(1 0 0 1 231.2122 222.4399)" font-family="'MS-Gothic'" font-size="9.9213">状況</text>
+	<text transform="matrix(1 0 0 1 251.0544 222.4399)" font-family="'MS-Gothic'" font-size="9.9213">：</text>
+	<rect x="65.5" y="758.466" fill="none" width="70.754" height="12.559"/>
+	<text transform="matrix(1 0 0 1 65.5002 767.3003)" font-family="'MS-Gothic'" font-size="9.9213">調査を実施し</text>
+	<text transform="matrix(1 0 0 1 126.3333 767.3003)" font-family="'MS-Gothic'" font-size="9.9213">た</text>
+	<rect x="153.79" y="758.466" fill="none" width="35.791" height="12.559"/>
+	<text transform="matrix(1 0 0 1 153.7898 767.3003)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="1">会社</text>
+	<text transform="matrix(1 0 0 1 179.6599 767.3003)" font-family="'MS-Gothic'" font-size="9.9213">名</text>
+	<rect x="153.79" y="730.121" fill="none" width="50.585" height="12.557"/>
+	<text id="固定文字_11_" transform="matrix(1 0 0 1 153.7898 738.6479)" font-family="'MS-Gothic'" font-size="9.9213">対策の概要</text>
+	<rect x="153.79" y="772.64" fill="none" width="35.791" height="12.559"/>
+	<text transform="matrix(1 0 0 1 153.7898 781.4731)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="1">連絡</text>
+	<text transform="matrix(1 0 0 1 179.6599 781.4731)" font-family="'MS-Gothic'" font-size="9.9213">先</text>
+	<rect x="200.422" y="772.64" fill="none" width="23.337" height="12.559"/>
+	<text transform="matrix(1 0 0 1 200.4221 781.4731)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="1">会</text>
+	<text transform="matrix(1 0 0 1 213.8381 781.4731)" font-family="'MS-Gothic'" font-size="9.9213">社</text>
+	<rect x="355.997" y="772.64" fill="none" width="23.339" height="12.559"/>
+	<text transform="matrix(1 0 0 1 355.9978 781.1675)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="2">FA</text>
+	<text transform="matrix(1 0 0 1 374.3748 781.1675)" font-family="'MS-Gothic'" font-size="9.9213">X</text>
+	<rect x="299.997" y="786.814" fill="none" width="31.088" height="12.557"/>
+	<text transform="matrix(1 0 0 1 299.9978 795.3403)" font-family="'MS-Gothic'" font-size="9.9213">E-mai</text>
+	<text transform="matrix(1 0 0 1 326.1228 795.3403)" font-family="'MS-Gothic'" font-size="9.9213">l</text>
+	<rect x="153.79" y="786.814" fill="none" width="35.791" height="12.557"/>
+	<text transform="matrix(1 0 0 1 153.7898 795.6479)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="1">職氏</text>
+	<text transform="matrix(1 0 0 1 179.6599 795.6479)" font-family="'MS-Gothic'" font-size="9.9213">名</text>
+	<rect x="65.5" y="772.64" fill="none" width="70.754" height="12.559"/>
+	<text transform="matrix(1 0 0 1 65.5002 781.4731)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="5">者の氏</text>
+	<text transform="matrix(1 0 0 1 118.8918 781.4731)" font-family="'MS-Gothic'" font-size="9.9213">名</text>
+	<text transform="matrix(1 0 0 1 128.8127 781.4731)" font-family="'MS-Gothic'" font-size="9.9213">・</text>
+	<rect x="65.5" y="786.814" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 795.6479)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">連絡先</text>
+	<text transform="matrix(1 0 0 1 126.3333 795.6479)" font-family="'MS-Gothic'" font-size="9.9213">等</text>
+	<rect x="65.5" y="732.539" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 738.5562)" font-family="'MS-Gothic'" font-size="7" letter-spacing="1">(</text>
+	<text transform="matrix(1 0 0 1 72.5002 739.2729)" font-family="'MS-Gothic'" font-size="7">緊急対策の必要</text>
+	<text transform="matrix(1 0 0 1 122.2542 739.2729)" font-family="'MS-Gothic'" font-size="7" letter-spacing="1">性</text>
+	<text transform="matrix(1 0 0 1 132.7542 738.5562)" font-family="'MS-Gothic'" font-size="7">)</text>
+	<rect x="65.5" y="219.885" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.5002 228.7192)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="8">被害拡</text>
+	<text transform="matrix(1 0 0 1 126.3333 228.7192)" font-family="'MS-Gothic'" font-size="9.9213">大</text>
+	<rect x="151.5" y="262.404" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 146.5398 271.2378)" font-family="'MS-Gothic'" font-size="9.9213">（位置図</text>
+	<text transform="matrix(1 0 0 1 186.2253 271.2378)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-2">）</text>
+	<text transform="matrix(1 0 0 1 157.6667 688.6694)" font-family="'MS-Gothic'" font-size="7">概ねの位置</text>
+</g>
+<g id="入力枠">
+	<rect id="email" x="337.279" y="786.615" fill="#E71F19" width="195.445" height="11.338"/>
+	<rect id="person_x5F_name" x="195" y="786.615" fill="#E71F19" width="97.024" height="11.338"/>
+	<rect id="fax" x="381.665" y="772.441" fill="#E71F19" width="117.667" height="11.34"/>
+	<rect id="tel" x="226" y="772.441" fill="#E71F19" width="117.667" height="11.34"/>
+	<rect id="company_x5F_name" x="195" y="758.267" fill="#E71F19" width="338.455" height="11.34"/>
+	<rect id="plan_x5F_summary" x="205.733" y="730.121" fill="#E71F19" width="326.991" height="25.307"/>
+	<rect id="special_x5F_status" x="259.5" y="701.5" fill="#E71F19" width="273.226" height="25.375"/>
+	<rect id="special_x5F_exists_fulse_1_" x="184.068" y="707.953" fill="#E71F19" width="12.266" height="11.34"/>
+	<rect id="special_x5F_exists_true_2_" x="153.429" y="707.953" fill="#E71F19" width="12.265" height="11.34"/>
+	<rect id="start_x5F_coord" x="195" y="680.316" fill="#E71F19" width="337.726" height="11.338"/>
+	<rect id="ichizu_x5F_kakudai" x="153.429" y="475.556" fill="#E71F19" width="380.025" height="193.777"/>
+	<rect id="ichizu_x5F_zentai" x="153.429" y="276.391" fill="#E71F19" width="380.025" height="196.995"/>
+	<rect id="expansion_x5F_status" x="259.5" y="205.513" fill="#E71F19" width="273.955" height="25.487"/>
+	<rect id="expansion_x5F_exists_fulse" x="184.068" y="212.599" fill="#E71F19" width="12.266" height="11.339"/>
+	<rect id="expansion_x5F_exists_true_1_" x="153.429" y="212.599" fill="#E71F19" width="12.265" height="11.339"/>
+	<rect id="comment" x="259.5" y="148.819" fill="#E71F19" width="273.955" height="53.858"/>
+	<rect id="distance_x5F_label" x="151.643" y="191.338" fill="#E71F19" width="99.505" height="11.339"/>
+	<rect id="side_x5F_type" x="151.5" y="177.166" fill="#E71F19" width="35.377" height="11.339"/>
+	<rect id="height" x="164.126" y="162.992" fill="#E71F19" width="38.758" height="11.339"/>
+	<rect id="length" x="164.126" y="148.819" fill="#E71F19" width="38.758" height="11.339"/>
+	<rect id="damage_x5F_date" x="197.086" y="120.473" fill="#E71F19" width="336.369" height="11.339"/>
+	<rect id="route_x5F_name" x="151.643" y="106.3" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="loc_x5F_name" x="151.643" y="92.127" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="dept_x5F_name" x="151.643" y="77.953" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="disaster_x5F_no" x="151.643" y="63.78" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="survey_x5F_date" x="425.901" y="45.354" fill="#E71F19" width="107.555" height="14.173"/>
+	<rect id="ref_x5F_no_1_" x="425.901" y="25.979" fill="#E71F19" width="107.555" height="14.173"/>
+</g>
+</svg>
+</div>
+        <div id="tpl-p2"><?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="レイヤー_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
+	 y="0px" width="595.279px" height="841.89px" viewBox="0 0 595.279 841.89" enable-background="new 0 0 595.279 841.89"
+	 xml:space="preserve">
+<g id="枠">
+	
+		<rect id="枠_42_" x="419.531" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="119.056" height="18.908"/>
+	
+		<rect id="枠_41_" x="360.005" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="59.526" height="18.908"/>
+	
+		<rect id="枠_40_" x="56.692" y="42.52" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="481.896" height="19.843"/>
+	
+		<rect id="枠_39_" x="56.692" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_38_" x="56.692" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_37_" x="56.692" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_30_" x="146.834" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_29_" x="146.834" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_28_" x="146.834" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_22_" x="56.692" y="104.883" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="481.896" height="694.488"/>
+</g>
+<g id="固定文字">
+	<text id="固定文字_80_" transform="matrix(1 0 0 1 365.7688 37.3315)" font-family="'MS-Gothic'" font-size="12">整理番号</text>
+	
+		<text id="固定文字_79_" transform="matrix(1 0 0 1 136.2527 59.9058)" font-family="'MS-Gothic'" font-size="18.9925" letter-spacing="12">被災状況調査票</text>
+	<text id="固定文字_78_" transform="matrix(1 0 0 1 360.0051 59.9058)" font-family="'MS-Gothic'" font-size="13">(2/2)</text>
+	<rect x="65.499" y="63.979" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4988 72.813)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="9">災害番</text>
+	<text transform="matrix(1 0 0 1 126.3328 72.813)" font-family="'MS-Gothic'" font-size="9.9213">号</text>
+	<rect x="65.499" y="78.153" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4988 86.9858)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="9">被災場</text>
+	<text transform="matrix(1 0 0 1 126.3328 86.9858)" font-family="'MS-Gothic'" font-size="9.9213">所</text>
+	<rect x="65.499" y="92.45" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4988 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">路</text>
+	<text transform="matrix(1 0 0 1 75.7468 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">線・</text>
+	<text transform="matrix(1 0 0 1 95.5896 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">河川名</text>
+	<text transform="matrix(1 0 0 1 126.3328 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">等</text>
+	<rect x="65.499" y="111.36" fill="none" width="70.754" height="12.557"/>
+	<text id="固定文字_41_" transform="matrix(1 0 0 1 65.4988 119.8862)" font-family="'MS-Gothic'" font-size="9.9213">写真</text>
+	<rect x="65.499" y="128.567" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 60.5388 137.4009)" font-family="'MS-Gothic'" font-size="9.9213">（全景</text>
+	<text transform="matrix(1 0 0 1 90.304 137.4009)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-3">）</text>
+	<rect x="65.499" y="467.898" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 60.5388 476.731)" font-family="'MS-Gothic'" font-size="9.9213">（近景</text>
+	<text transform="matrix(1 0 0 1 90.304 476.731)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="-3">）</text>
+</g>
+<g id="入力枠">
+	<rect id="photo_x5F_zenkei" x="69.642" y="140.316" fill="#E71F19" width="463.813" height="299.189"/>
+	<rect id="photo_x5F_zenkei_x5F_comment" x="69.642" y="442.126" fill="#E71F19" width="463.813" height="12.756"/>
+	<rect id="photo_x5F_kinkei_x5F_comment" x="69.642" y="780.435" fill="#E71F19" width="463.813" height="12.758"/>
+	<rect id="photo_x5F_kinkei" x="69.642" y="478.921" fill="#E71F19" width="463.813" height="299.189"/>
+	<rect id="route_x5F_name_1_" x="151.642" y="92.25" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="loc_x5F_name_2_" x="151.642" y="77.954" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="disaster_x5F_no_1_" x="151.642" y="63.78" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="survey_x5F_date_1_" x="425.901" y="45.354" fill="#E71F19" width="107.555" height="14.173"/>
+	<rect id="ref_x5F_no_2_" x="425.901" y="25.979" fill="#E71F19" width="107.555" height="14.173"/>
+</g>
+</svg>
+</div>
+        <div id="tpl-p3"><?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="レイヤー_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
+	 y="0px" width="595.279px" height="841.89px" viewBox="0 0 595.279 841.89" enable-background="new 0 0 595.279 841.89"
+	 xml:space="preserve">
+<g id="枠">
+	
+		<rect id="枠_35_" x="419.531" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="119.056" height="18.908"/>
+	
+		<rect id="枠_34_" x="360.005" y="23.611" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="59.526" height="18.908"/>
+	
+		<rect id="枠_33_" x="56.692" y="42.52" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="481.896" height="19.843"/>
+	
+		<rect id="枠_32_" x="56.692" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_31_" x="56.692" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_27_" x="56.692" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="90.143" height="14.173"/>
+	
+		<rect id="枠_26_" x="146.834" y="62.363" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_25_" x="146.834" y="76.536" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_24_" x="146.834" y="90.709" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="391.753" height="14.173"/>
+	
+		<rect id="枠_23_" x="56.692" y="104.883" fill="none" stroke="#000000" stroke-width="0.7087" stroke-miterlimit="10" width="481.896" height="694.488"/>
+</g>
+<g id="固定文字">
+	<text id="固定文字_52_" transform="matrix(1 0 0 1 365.7668 37.3315)" font-family="'MS-Gothic'" font-size="12">整理番号</text>
+	
+		<text id="固定文字_51_" transform="matrix(1 0 0 1 136.2537 59.9058)" font-family="'MS-Gothic'" font-size="18.9925" letter-spacing="12">被災状況調査票</text>
+	<text id="固定文字_50_" transform="matrix(1 0 0 1 360.0032 59.9058)" font-family="'MS-Gothic'" font-size="13">写真集</text>
+	<rect x="65.499" y="63.979" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4998 72.813)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="9">災害番</text>
+	<text transform="matrix(1 0 0 1 126.3318 72.813)" font-family="'MS-Gothic'" font-size="9.9213">号</text>
+	<rect x="65.499" y="78.153" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4998 86.9858)" font-family="'MS-Gothic'" font-size="9.9213" letter-spacing="9">被災場</text>
+	<text transform="matrix(1 0 0 1 126.3318 86.9858)" font-family="'MS-Gothic'" font-size="9.9213">所</text>
+	<rect x="65.499" y="92.45" fill="none" width="70.754" height="12.557"/>
+	<text transform="matrix(1 0 0 1 65.4998 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">路</text>
+	<text transform="matrix(1 0 0 1 75.7468 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">線・</text>
+	<text transform="matrix(1 0 0 1 95.5896 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">河川名</text>
+	<text transform="matrix(1 0 0 1 126.3328 101.2827)" font-family="'MS-Gothic'" font-size="9.9213">等</text>
+</g>
+<g id="入力枠">
+	<rect id="photo_1_" x="65.732" y="123.14" fill="#E71F19" width="273.391" height="205.043"/>
+	<rect id="photo_2_" x="65.732" y="350.467" fill="#E71F19" width="273.391" height="205.042"/>
+	<rect id="photo_3_" x="65.732" y="577.794" fill="#E71F19" width="273.391" height="205.043"/>
+	<rect id="photo_x5F_comment" x="350.718" y="123.14" fill="#E71F19" width="176.238" height="205.043"/>
+	<rect id="photo_x5F_comment_1_" x="350.718" y="350.467" fill="#E71F19" width="176.238" height="205.042"/>
+	<rect id="photo_x5F_comment_2_" x="350.718" y="577.794" fill="#E71F19" width="176.238" height="205.043"/>
+	<rect id="route_x5F_name_2_" x="151.642" y="92.25" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="loc_x5F_name_1_" x="151.642" y="77.954" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="disaster_x5F_no_2_" x="151.642" y="63.78" fill="#E71F19" width="381.813" height="11.339"/>
+	<rect id="survey_x5F_date_2_" x="425.901" y="45.354" fill="#E71F19" width="107.555" height="14.173"/>
+	<rect id="ref_x5F_no_3_" x="425.901" y="25.979" fill="#E71F19" width="107.555" height="14.173"/>
+</g>
+</svg>
+</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
+    <script>
+/* --- Source: 2_script_core.js --- */
+window.managerApp = {
+    map: null,
+    db:[],
+    layerMap: new Map(),
+    currentKey: null,
+    sortKey: 'ref_no',
+    sortAsc: true,
+    isAborted: false,
+
+    fieldMaster: {
+        company_id: { label: "会社ID", type: "text" },
+        leader_name: { label: "調査班長名", type: "text" },
+        ref_no: { label: "整理番号", type: "text" },
+        survey_date: { label: "調査日", type: "date" },
+        disaster_no: { label: "災害番号", type: "text" },
+        dept_name: { label: "所属名", type: "text" },
+        loc_name: { label: "被災場所", type: "text" },
+        route_name: { label: "路線・河川名", type: "text" },
+        damage_date: { label: "被災日", type: "date" },
+        length: { label: "延長[m]", type: "number", step: "0.1" },
+        height: { label: "高さ[m]", type: "number", step: "0.1" },
+        side_type: { label: "岸別", type: "select", options: ["選択...", "右岸", "左岸", "距離標なし"] },
+        distance_label: { label: "距離標・区間", type: "text" },
+        comment: { label: "コメント", type: "textarea" },
+        expansion_exists: { label: "被災拡大の可能性", type: "select", options: ["選択...", "有", "無"] },
+        expansion_status: { label: "拡大状況", type: "textarea" },
+        special_exists: { label: "特記事項有無", type: "select", options: ["選択...", "有", "無"] },
+        special_status: { label: "特記状況", type: "textarea" },
+        plan_summary: { label: "対策概要", type: "textarea" },
+        company_name: { label: "会社名", type: "text" },
+        tel: { label: "電話番号", type: "tel" },
+        fax: { label: "FAX番号", type: "tel" },
+        person_name: { label: "職氏名", type: "text" },
+        email: { label: "E-mail", type: "email" },
+        start_lat: { label: "起点 緯度", type: "number", step: "0.000001" },
+        start_lng: { label: "起点 経度", type: "number", step: "0.000001" },
+        end_lat: { label: "終点 緯度", type: "number", step: "0.000001" },
+        end_lng: { label: "終点 経度", type: "number", step: "0.000001" }
+    },
+
+    init() {
+        if (this.map) return;
+        
+        this.map = L.map('map', { 
+            renderer: L.canvas(),
+            zoomSnap: 0,
+            zoomDelta: 0.1,
+            wheelPxPerZoomLevel: 200
+        }).setView([31.5601, 130.5580], 16);
+
+        const layers = {
+            "地理院 標準": L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { attribution: "GSI", crossOrigin: 'anonymous' }),
+            "地理院 淡色": L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: "GSI", crossOrigin: 'anonymous' }),
+            "地理院 写真": L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { attribution: "GSI", crossOrigin: 'anonymous' }),
+            "ESRI 衛星": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: "Esri", crossOrigin: 'anonymous' })
+        };
+        layers["地理院 淡色"].addTo(this.map);
+        L.control.layers(layers).addTo(this.map);
+        managerApp.setupDropZone();
+    },
+
+    formatWareki(dateStr) {
+        if (!dateStr || dateStr === "-") return "-";
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return new Intl.DateTimeFormat('ja-JP-u-ca-japanese', { era: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+        } catch (e) { return dateStr; }
+    },
+
+    getCenterOfGeom(geom) {
+        if (!geom || !geom.features || !geom.features.length) return null;
+        try {
+            const tempLayer = L.geoJSON(geom);
+            const bounds = tempLayer.getBounds();
+            return bounds.isValid() ? bounds.getCenter() : null;
+        } catch (e) { return null; }
+    },
+
+    selectItem(key) {
+        this.currentKey = key;
+        const data = this.db.find(d => d._key === key);
+        if (!data) return;
+        managerApp.renderList();
+        managerApp.renderMarkers();
+        managerApp.showDetail(data);
+        document.getElementById('edit-actions').style.display = 'flex';
+        const center = managerApp.getCenterOfGeom(data.mainGeom);
+        if (center) this.map.panTo(center);
+    },
+
+    showDetail(data) {
+        const panel = document.getElementById('edit-panel');
+        if (!panel) return; panel.innerHTML = "";
+        const h = document.createElement('div'); h.style.padding = "10px 15px"; h.style.borderBottom = "1px solid #ddd"; h.style.background = "#fff";
+        h.innerHTML = `<h3 style="margin:0; font-size:1rem;">#${data.ref_no} 編集</h3>`;
+        panel.appendChild(h);
+        const groups =[
+            { t: "管理項目", f:["company_id", "leader_name", "ref_no", "survey_date", "disaster_no"] },
+            { t: "諸元", f:["dept_name", "loc_name", "route_name"] },
+            { t: "被災状況", f:["damage_date", "length", "height", "side_type", "distance_label", "comment"] },
+            { t: "拡大の可能性・特記", f:["expansion_exists", "expansion_status", "special_exists", "special_status", "plan_summary"] },
+            { t: "調査を実施した者", f:["company_name", "tel", "fax", "person_name", "email"] },
+            { t: "位置座標", f:["start_lat", "start_lng", "end_lat", "end_lng"] }
+        ];
+        groups.forEach(g => {
+            const groupDiv = document.createElement('div'); groupDiv.className = "detail-group";
+            const title = document.createElement('div'); title.className = "detail-group-title"; title.textContent = g.t;
+            groupDiv.appendChild(title);
+            const table = document.createElement('table'); table.className = "detail-table";
+            g.f.forEach(k => {
+                const def = this.fieldMaster[k]; const tr = document.createElement('tr');
+                const tdL = document.createElement('td'); tdL.className = "detail-label"; tdL.textContent = def.label;
+                const tdI = document.createElement('td');
+                let el;
+                if (def.type === 'select') {
+                    el = document.createElement('select');
+                    def.options.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; if(data[k]===o) op.selected = true; el.appendChild(op); });
+                    el.onchange = (e) => managerApp.updateValue(data._key, k, e.target.value);
+                } else if (def.type === 'textarea') {
+                    el = document.createElement('textarea'); el.value = data[k] || ''; el.oninput = (e) => managerApp.updateValue(data._key, k, e.target.value);
+                } else {
+                    el = document.createElement('input'); el.type = def.type; if(def.step) el.step = def.step; el.value = data[k] || ''; el.oninput = (e) => managerApp.updateValue(data._key, k, e.target.value);
+                }
+                tdI.appendChild(el); tr.appendChild(tdL); tr.appendChild(tdI); table.appendChild(tr);
+            });
+            groupDiv.appendChild(table); panel.appendChild(groupDiv);
+        });
+        if (data._photos && data._photos.length > 0) {
+            const pDiv = document.createElement('div'); pDiv.className = "detail-group";
+            pDiv.innerHTML = `<div class="detail-group-title">写真 (${data._photos.length}枚)</div>`;
+            const scroll = document.createElement('div'); scroll.style.display = "flex"; scroll.style.overflowX = "auto"; scroll.style.gap = "8px"; scroll.style.padding = "10px";
+            data._photos.forEach(p => { const img = document.createElement('img'); img.src = p.dataUrl; img.style.height = "100px"; img.style.border = "1px solid #ccc"; scroll.appendChild(img); });
+            pDiv.appendChild(scroll); panel.appendChild(pDiv);
+        }
+    },
+
+    updateValue(key, f, v) { const i = this.db.find(d => d._key === key); if (i) { i[f] = v; managerApp.renderDatabase(); } }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab-btn').forEach(t => t.addEventListener('click', () => {
+        const target = t.dataset.target;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); t.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => {
+            c.classList.toggle('active', c.id === target);
+            if ((target === 'content-individual' || target === 'content-database') && window.managerApp.map) setTimeout(() => window.managerApp.map.invalidateSize(), 350);
+        });
+    }));
+    window.managerApp.init();
+});
+
+/* --- Source: 2_script_import.js --- */
+// --- インポート・エクスポートモジュール ---
+Object.assign(window.managerApp, {
+    setupDropZone() {
+        const dz = document.getElementById('drop-zone');
+        if (!dz) return;
+        dz.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file'; input.multiple = true; input.accept = '.zip';
+            input.onchange = (e) => managerApp.handleFiles(e.target.files);
+            input.click();
+        };
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => { e.preventDefault(); managerApp.handleFiles(e.dataTransfer.files); });
+    },
+
+    async handleFiles(files) {
+        for (const file of Array.from(files)) {
+            if (file.name.endsWith('.zip')) await managerApp.importJZip(file);
+        }
+        managerApp.refreshAll();
+    },
+
+    async importJZip(file) {
+        try {
+            const zip = await JSZip.loadAsync(file);
+            const jsonStr = await zip.file("survey_data.json").async("string");
+            const data = JSON.parse(jsonStr);
+            data._key = `${data.company_id}_${data.ref_no}_${Date.now()}`;
+            data._originalName = file.name.replace(/\.zip$/i, '');
+            data._photos =[];
+            if (data.photoList) {
+                for (const p of data.photoList) {
+                    const bFile = zip.file(`photos/${p.fileName}`);
+                    if(bFile) {
+                        const b64 = await bFile.async("base64");
+                        data._photos.push({ dataUrl: `data:image/jpeg;base64,${b64}`, memo: p.memo, tag: p.tag });
+                    }
+                }
+            }
+
+            // 座標情報の自動抽出
+            if (data.mainGeom && data.mainGeom.features && data.mainGeom.features.length > 0) {
+                const geom = data.mainGeom.features[0].geometry;
+                let sLat = "", sLng = "", eLat = "", eLng = "";
+                
+                if (geom.type === "Point") {
+                    sLng = eLng = geom.coordinates[0];
+                    sLat = eLat = geom.coordinates[1];
+                } else if (geom.type === "LineString") {
+                    const coords = geom.coordinates;
+                    if (coords.length > 0) {
+                        sLng = coords[0][0];
+                        sLat = coords[0][1];
+                        eLng = coords[coords.length - 1][0];
+                        eLat = coords[coords.length - 1][1];
+                    }
+                } else if (geom.type === "Polygon" || geom.type === "MultiLineString") {
+                    const coords = geom.coordinates[0];
+                    if (coords && coords.length > 0) {
+                        sLng = coords[0][0];
+                        sLat = coords[0][1];
+                        eLng = coords[coords.length - 1][0];
+                        eLat = coords[coords.length - 1][1];
+                    }
+                }
+                data.start_lat = sLat;
+                data.start_lng = sLng;
+                data.end_lat = eLat;
+                data.end_lng = eLng;
+            }
+
+            this.db.push(data);
+        } catch (e) { console.error("Import error", e); }
+    },
+
+    async exportSingleJZip() {
+        const data = this.db.find(d => d._key === this.currentKey);
+        if (!data) return;
+        
+        const zip = new JSZip(); 
+        const folder = zip.folder("photos");
+        const exportData = JSON.parse(JSON.stringify(data));
+        
+        const originalName = exportData._originalName; 
+        delete exportData._key; 
+        delete exportData._photos; 
+        delete exportData._originalName;
+        
+        data._photos.forEach((p, i) => { 
+            folder.file(`photo_${i}.jpg`, p.dataUrl.split(',')[1], {base64: true}); 
+        });
+        zip.file("survey_data.json", JSON.stringify(exportData, null, 2));
+        
+        const blob = await zip.generateAsync({type:"blob"});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob);
+        
+        const dlName = originalName ? `${originalName}.zip` : `update_${data.ref_no}.zip`;
+        a.download = dlName; 
+        a.click();
+    },
+
+    executeExport() {
+        const type = document.getElementById('export-type').value;
+        if (type === 'csv') {
+            this.exportTotalCSV();
+        } else if (type === 'geojson') {
+            this.exportGeoJSON();
+        } else if (type === 'kml') {
+            this.exportKML();
+        }
+    },
+
+    exportTotalCSV() {
+        const csv = "\uFEFF" + Object.keys(this.fieldMaster).map(k => this.fieldMaster[k].label).join(",") + "\n" + 
+                    this.db.map(d => Object.keys(this.fieldMaster).map(k => `"${(d[k] || "").toString().replace(/"/g, '""')}"`).join(",")).join("\n");
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+        a.download = `integrated_data.csv`; a.click();
+    },
+
+    exportGeoJSON() {
+        const features = this.db.map(d => {
+            if (!d.mainGeom || !d.mainGeom.features || !d.mainGeom.features.length) return null;
+            const geom = d.mainGeom.features[0].geometry;
+            
+            const props = {};
+            Object.keys(this.fieldMaster).forEach(k => {
+                props[this.fieldMaster[k].label] = d[k] || "";
+            });
+
+            return {
+                type: "Feature",
+                properties: props,
+                geometry: geom
+            };
+        }).filter(f => f !== null);
+
+        const geojson = {
+            type: "FeatureCollection",
+            features: features
+        };
+
+        const jsonStr = JSON.stringify(geojson, null, 2);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([jsonStr], {type: "application/geo+json"}));
+        a.download = "integrated_data.geojson";
+        a.click();
+    },
+
+    exportKML() {
+        let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Integrated Data</name>`;
+
+        this.db.forEach(d => {
+            if (!d.mainGeom || !d.mainGeom.features || !d.mainGeom.features.length) return;
+            const geom = d.mainGeom.features[0].geometry;
+            const name = d.disaster_no || d.ref_no || "No Name";
+            
+            let desc = '<table border="1">';
+            Object.keys(this.fieldMaster).forEach(k => {
+                desc += `<tr><td>${this.fieldMaster[k].label}</td><td>${d[k] || ""}</td></tr>`;
+            });
+            desc += '</table>';
+
+            kml += `
+    <Placemark>
+      <name>${name}</name>
+      <description><![CDATA[${desc}]]></description>`;
+
+            if (geom.type === "Point") {
+                kml += `
+      <Point><coordinates>${geom.coordinates[0]},${geom.coordinates[1]}</coordinates></Point>`;
+            } else if (geom.type === "LineString") {
+                const coords = geom.coordinates.map(c => `${c[0]},${c[1]}`).join(" ");
+                kml += `
+      <LineString><coordinates>${coords}</coordinates></LineString>`;
+            }
+
+            kml += `
+    </Placemark>`;
+        });
+
+        kml += `
+  </Document>
+</kml>`;
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([kml], {type: "application/vnd.google-earth.kml+xml"}));
+        a.download = "integrated_data.kml";
+        a.click();
+    }
+});
+
+/* --- Source: 2_script_db.js --- */
+// --- データベース・リスト表示モジュール ---
+Object.assign(window.managerApp, {
+    refreshAll() {
+        if (!this._searchOptionsInitialized) {
+            this.setupSearchOptions();
+            this._searchOptionsInitialized = true;
+        }
+        managerApp.renderList();
+        managerApp.renderMarkers();
+        managerApp.renderDatabase();
+    },
+
+    setupSearchOptions() {
+        const sel = document.getElementById('db-search-field');
+        if (!sel) return;
+        sel.innerHTML = '<option value="all">全項目</option>';
+        Object.keys(this.fieldMaster).forEach(k => {
+            const op = document.createElement('option');
+            op.value = k;
+            op.textContent = this.fieldMaster[k].label;
+            sel.appendChild(op);
+        });
+    },
+
+    renderList() {
+        const list = document.getElementById('data-list');
+        if (!list) return; list.innerHTML = "";
+        const counter = document.getElementById('list-count');
+        if (counter) counter.textContent = this.db.length;
+        this.db.forEach(data => {
+            const item = document.createElement('div');
+            item.className = `data-item ${this.currentKey === data._key ? 'active' : ''}`;
+            item.innerHTML = `<strong>#${data.ref_no || '---'} (${data.disaster_no || ''})</strong><small>${data.company_id} / ${data.leader_name}</small>`;
+            item.onclick = () => managerApp.selectItem(data._key);
+            list.appendChild(item);
+        });
+    },
+
+    renderMarkers() {
+        this.layerMap.forEach(obj => { this.map.removeLayer(obj.main); if(obj.glow) this.map.removeLayer(obj.glow); });
+        this.layerMap.clear();
+
+        this.db.forEach((data, key) => {
+            this._addMarkerToMap(data);
+        });
+    },
+
+    // 指定されたキーのみ表示（全体図モード用）
+    renderSelectedMarkers(targetKeys) {
+        // 全クリア
+        this.layerMap.forEach(obj => { this.map.removeLayer(obj.main); if(obj.glow) this.map.removeLayer(obj.glow); });
+        this.layerMap.clear();
+
+        // 該当データのみ追加
+        this.db.filter(d => targetKeys.includes(d._key)).forEach(data => {
+            this._addMarkerToMap(data);
+        });
+        
+        // 範囲をフィットさせる（パネル回避パディング付き）
+        const geoms = this.db.filter(d => targetKeys.includes(d._key)).map(d => d.mainGeom);
+        if (geoms.length > 0) {
+            try {
+                const bounds = L.geoJSON(geoms).getBounds();
+                if (bounds.isValid()) {
+                    this.map.fitBounds(bounds, { 
+                        paddingTopLeft: [50, 50],
+                        paddingBottomRight: [350, 100] // 右下の設定パネルを避ける
+                    });
+                }
+            } catch(e) {}
+        }
+    },
+
+    _addMarkerToMap(data) {
+        if (!data.mainGeom || !data.mainGeom.features.length) return;
+        const isSelected = (this.currentKey === data._key);
+        let glowLayer = null;
+
+        if (isSelected) {
+            glowLayer = L.geoJSON(data.mainGeom, { 
+                style: { color: '#f1c40f', weight: 14, opacity: 0.6 }, 
+                pointToLayer: (f, ll) => L.circle(ll, { radius: 10, color: '#f1c40f', weight: 12, fillOpacity: 0.4 }) 
+            }).addTo(this.map);
+        }
+
+        const mainLayer = L.geoJSON(data.mainGeom, {
+            style: { color: '#ff0000', weight: 5, opacity: 1.0 },
+            pointToLayer: (f, ll) => L.circle(ll, { radius: 10, color: '#ff0000', weight: 2, fillOpacity: 0 }),
+            onEachFeature: (f, layer) => {
+                layer.bindPopup(`災害:${data.disaster_no}<br>整理番号:${data.ref_no}`);
+                layer.on('click', () => managerApp.selectItem(data._key));
+                layer.on('mouseover', function() { this.openPopup(); });
+                layer.on('mouseout', function() { this.closePopup(); });
+            }
+        });
+        
+        mainLayer.addTo(this.map);
+        this.layerMap.set(data._key, { main: mainLayer, glow: glowLayer });
+    },
+
+    renderDatabase() {
+        const tbody = document.getElementById('db-tbody'), thead = document.getElementById('db-thead');
+        if (!tbody || !thead) return;
+        
+        const keys = Object.keys(this.fieldMaster);
+        thead.innerHTML = `<tr>
+            <th><input type="checkbox" id="db-check-all" onclick="managerApp.toggleAllChecks(this)"></th>
+            <th>個別</th>
+            ${keys.map(k => `<th onclick="managerApp.sortDB('${k}')">${this.fieldMaster[k].label}</th>`).join('')}
+        </tr>`;
+        
+        const q = (document.getElementById('db-search').value || "").toLowerCase();
+        const targetField = document.getElementById('db-search-field').value;
+
+        let flt = this.db.filter(d => {
+            if (targetField === 'all') {
+                return Object.values(d).some(v => String(v).toLowerCase().includes(q));
+            } else {
+                return String(d[targetField] || "").toLowerCase().includes(q);
+            }
+        });
+
+        flt.sort((a, b) => { let vA = a[this.sortKey] || "", vB = b[this.sortKey] || ""; return this.sortAsc ? vA.toString().localeCompare(vB.toString()) : vB.toString().localeCompare(vA.toString()); });
+        
+        tbody.innerHTML = "";
+        flt.forEach(d => {
+            const tr = document.createElement('tr');
+            const tdC = document.createElement('td'); tdC.innerHTML = `<input type="checkbox" class="db-check" data-key="${d._key}">`; tr.appendChild(tdC);
+            const tdJ = document.createElement('td');
+            const btn = document.createElement('button'); btn.className = "btn-sub"; btn.style.fontSize = "0.6rem"; btn.style.padding = "2px 4px"; btn.style.whiteSpace = "nowrap"; btn.textContent = "個別へ";
+            btn.onclick = () => managerApp.selectFromDB(d._key); tdJ.appendChild(btn); tr.appendChild(tdJ);
+            keys.forEach(k => {
+                const td = document.createElement('td');
+                const inp = document.createElement('input'); inp.type = "text"; inp.value = d[k] || ''; inp.style.border = "none"; inp.style.background = "transparent"; inp.style.width = "100%"; inp.style.fontSize = "0.75rem";
+                inp.oninput = (e) => managerApp.updateValue(d._key, k, e.target.value);
+                td.appendChild(inp); tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    },
+
+    toggleAllChecks(source) {
+        document.querySelectorAll('#db-tbody .db-check').forEach(cb => {
+            cb.checked = source.checked;
+        });
+    },
+
+    selectFromDB(key) {
+        document.querySelector('.tab-btn[data-target="content-individual"]').click();
+        setTimeout(() => managerApp.selectItem(key), 400);
+    },
+
+    sortDB(k) { if(this.sortKey===k) this.sortAsc=!this.sortAsc; else {this.sortKey=k; this.sortAsc=true;} managerApp.renderDatabase(); }
+});
+
+/* --- Source: 2_script_report.js --- */
+// --- 帳票・キャプチャモジュール ---
+Object.assign(window.managerApp, {
+    showProgress(msg, current, total) {
+        const overlay = document.getElementById('progress-overlay'); overlay.style.display = 'flex';
+        document.getElementById('progress-msg').textContent = msg;
+        document.getElementById('progress-count').textContent = total ? `${current} / ${total}` : "";
+    },
+
+    hideProgress() { document.getElementById('progress-overlay').style.display = 'none'; },
+    
+    abortProcess() { this.isAborted = true; managerApp.hideProgress(); },
+
+    async startGlobalMapMode() {
+        const selectedKeys = Array.from(document.querySelectorAll('.db-check:checked')).map(cb => cb.dataset.key);
+        if (selectedKeys.length === 0) return alert("箇所を選択してください。");
+        
+        this._selectedKeysForGlobalMap = selectedKeys;
+
+        const labelSel = document.getElementById('cfg-label-field');
+        if (labelSel) {
+            labelSel.innerHTML = "";
+            const fm = window.managerApp.fieldMaster;
+            Object.keys(fm).forEach(k => {
+                const op = document.createElement('option');
+                op.value = k;
+                op.textContent = fm[k].label;
+                if (k === 'disaster_no') op.selected = true; 
+                labelSel.appendChild(op);
+            });
+        }
+
+        this.switchToMapTab();
+        await new Promise(r => setTimeout(r, 200));
+        this.map.invalidateSize(); 
+        managerApp.renderSelectedMarkers(selectedKeys);
+        document.getElementById('config-modal').style.display = 'flex';
+    },
+
+    closeA3Config() {
+        document.getElementById('config-modal').style.display = 'none';
+        managerApp.renderMarkers();
+        this._selectedKeysForGlobalMap = null;
+    },
+
+    execA3Output() {
+        if (!this._selectedKeysForGlobalMap) return;
+        const config = {
+            targetHeight: parseInt(document.getElementById('cfg-height').value) || 2000,
+            labelField: document.getElementById('cfg-label-field').value,
+            fontScale: parseFloat(document.getElementById('cfg-font').value),
+            showCompass: document.getElementById('cfg-compass').checked,
+            showScale: document.getElementById('cfg-scale').checked
+        };
+        this.generateA3GlobalMap(config);
+    },
+
+    switchToMapTab() {
+        const activeTab = document.querySelector('.tab-btn.active');
+        const originalTabId = activeTab ? activeTab.dataset.target : 'content-individual';
+        const mapBtn = document.querySelector('.tab-btn[data-target="content-individual"]');
+        if (mapBtn && !mapBtn.classList.contains('active')) mapBtn.click();
+        return originalTabId;
+    },
+
+    restoreTab(tabId) {
+        const btn = document.querySelector(`.tab-btn[data-target="${tabId}"]`);
+        if (btn) btn.click();
+    },
+
+    async waitForTiles() {
+        return new Promise(resolve => {
+            const timeout = setTimeout(() => { console.warn("Tile load timeout"); resolve(); }, 5000);
+            setTimeout(() => {
+                if (!this.map._tilesToLoad || this.map._tilesToLoad === 0) {
+                    setTimeout(() => { clearTimeout(timeout); resolve(); }, 500);
+                } else {
+                    this.map.once('load', () => { clearTimeout(timeout); setTimeout(resolve, 500); });
+                }
+            }, 200); 
+        });
+    },
+
+    getStartPoint(feature) {
+        if (!feature || !feature.geometry) return null;
+        const geom = feature.geometry;
+        if (geom.type === "Point") return { lat: geom.coordinates[1], lng: geom.coordinates[0] };
+        else if (geom.type === "LineString") return { lat: geom.coordinates[0][1], lng: geom.coordinates[0][0] };
+        else if (geom.type === "Polygon") return { lat: geom.coordinates[0][0][1], lng: geom.coordinates[0][0][0] };
+        else if (geom.type === "MultiLineString") return { lat: geom.coordinates[0][0][1], lng: geom.coordinates[0][0][0] };
+        return null; 
+    },
+
+    async generateReport() {
+        const data = this.db.find(d => d._key === this.currentKey);
+        if (!data || !confirm("帳票を生成します。よろしいですか？")) return;
+        
+        managerApp.showProgress("帳票生成中...", 1, 1);
+        const pw = window.open('', '_blank');
+        if (!pw) { alert("ポップアップがブロックされました。"); managerApp.hideProgress(); return; }
+        
+        const st = `<style>@page { size: A4; margin: 0; } body { margin: 0; padding: 0; background: #fff; width: 210mm; } .print-page-a4 { width: 210mm; height: 297mm; overflow: hidden; page-break-after: always; position: relative; } svg { width: 100%; height: 100%; display: block; }</style>`;
+        pw.document.write(`<!DOCTYPE html><html><head><title>調査票</title>${st}</head><body>`);
+        
+        const originalTab = this.switchToMapTab();
+        await new Promise(r => setTimeout(r, 500));
+
+        try {
+            const maps = await managerApp.captureMapFinal(data);
+            pw.document.write(`<div class="print-page-a4">${managerApp.fillSVG('tpl-p1', data, maps, false)}</div>`);
+            pw.document.write(`<div class="print-page-a4">${managerApp.fillSVG('tpl-p2', data, null, true)}</div>`);
+            const ex = data._photos.filter(p => p.tag !== '全景' && p.tag !== '近景');
+            for (let i = 0; i < ex.length; i += 3) { pw.document.write(`<div class="print-page-a4">${managerApp.fillPhotoBook(ex.slice(i, i + 3), data)}</div>`); }
+            pw.document.write('</body></html>'); pw.document.close();
+            managerApp.hideProgress();
+            setTimeout(() => { if(!this.isAborted) pw.print(); }, 1000);
+        } catch (e) {
+            console.error(e);
+            pw.document.write(`<div style="padding:20px; color:red;">エラーが発生しました: ${e.message}</div>`);
+            managerApp.hideProgress();
+        } finally {
+            this.restoreTab(originalTab);
+        }
+    },
+
+    async batchPrint() {
+        const selectedKeys = Array.from(document.querySelectorAll('.db-check:checked')).map(cb => cb.dataset.key);
+        if (selectedKeys.length === 0) return alert("箇所を選択してください。");
+        if (!confirm(`${selectedKeys.length}件の帳票を一括生成します。\n※処理中は画面が自動で切り替わりますが、完了まで触らずにお待ちください。`)) return;
+        
+        this.isAborted = false;
+        const pw = window.open('', '_blank');
+        if (!pw) return alert("ポップアップがブロックされました。");
+
+        const st = `<style>@page { size: A4; margin: 0; } body { margin: 0; padding: 0; background: #fff; width: 210mm; } .print-page-a4 { width: 210mm; height: 297mm; overflow: hidden; page-break-after: always; position: relative; } svg { width: 100%; height: 100%; display: block; }</style>`;
+        pw.document.write(`<!DOCTYPE html><html><head><title>一括出力</title>${st}</head><body>`);
+        
+        const originalTab = this.switchToMapTab();
+        await new Promise(r => setTimeout(r, 1000));
+        this.map.invalidateSize();
+
+        try {
+            for (let i = 0; i < selectedKeys.length; i++) {
+                if (this.isAborted) break;
+                const data = this.db.find(d => d._key === selectedKeys[i]);
+                managerApp.showProgress(`データ処理中... (${i + 1}/${selectedKeys.length})`, i + 1, selectedKeys.length);
+                
+                const maps = await managerApp.captureMapFinal(data);
+                
+                pw.document.write(`<div class="print-page-a4">${managerApp.fillSVG('tpl-p1', data, maps, false)}</div>`);
+                pw.document.write(`<div class="print-page-a4">${managerApp.fillSVG('tpl-p2', data, null, true)}</div>`);
+                const ex = data._photos.filter(p => p.tag !== '全景' && p.tag !== '近景');
+                for (let j = 0; j < ex.length; j += 3) { pw.document.write(`<div class="print-page-a4">${managerApp.fillPhotoBook(ex.slice(j, j + 3), data)}</div>`); }
+            }
+        } catch (e) {
+            console.error(e);
+            alert("処理中にエラーが発生しました: " + e.message);
+        } finally {
+            this.restoreTab(originalTab);
+            managerApp.hideProgress();
+        }
+
+        if (!this.isAborted) { 
+            pw.document.write('</body></html>'); 
+            pw.document.close(); 
+            setTimeout(() => pw.print(), 1000); 
+        } else {
+            pw.close();
+        }
+    },
+
+    async generateA3GlobalMap(config) {
+        this.isAborted = false;
+        managerApp.showProgress("全体図を作成中 (高画質)...", 1, 1);
+        
+        try {
+            await this.waitForTiles();
+            
+            const mapSize = this.map.getSize(); 
+            const scale = config.targetHeight / mapSize.y;
+            
+            const canvas = document.createElement('canvas'); 
+            canvas.width = mapSize.x * scale;
+            canvas.height = mapSize.y * scale;
+            const ctx = canvas.getContext('2d'); 
+            ctx.scale(scale, scale); 
+            ctx.fillStyle="#fff"; ctx.fillRect(0,0,mapSize.x, mapSize.y);
+            
+            const mapRect = document.getElementById('map').getBoundingClientRect();
+            const tiles = Array.from(document.querySelectorAll('.leaflet-tile-pane img'));
+            
+            tiles.forEach(tile => { 
+                const r = tile.getBoundingClientRect(); 
+                if (r.width > 0 && r.height > 0 && tile.naturalWidth > 0) {
+                    try { ctx.drawImage(tile, r.left - mapRect.left, r.top - mapRect.top, r.width, r.height); } catch(e){}
+                }
+            });
+            
+            const targetKeys = this._selectedKeysForGlobalMap ||[];
+            this.db.filter(d => targetKeys.includes(d._key)).forEach(data => {
+                let labelPt = null;
+                const feature = data.mainGeom.features[0];
+                if (feature) {
+                    const startLatLng = managerApp.getStartPoint(feature);
+                    if (startLatLng) labelPt = this.map.latLngToContainerPoint(startLatLng);
+                }
+
+                if (labelPt) {
+                    L.geoJSON(data.mainGeom).eachLayer(l => {
+                        const pts =[];
+                        if (l.getLatLngs) {
+                            const r = l.getLatLngs(); 
+                            (Array.isArray(r[0]) ? r[0] : r).forEach(ll => pts.push(this.map.latLngToContainerPoint(ll)));
+                        } else if (l.getLatLng) {
+                            pts.push(this.map.latLngToContainerPoint(l.getLatLng()));
+                        }
+
+                        if (pts.length > 1) { 
+                            ctx.beginPath(); ctx.strokeStyle = "#ff0000"; ctx.lineWidth = 2;
+                            ctx.moveTo(pts[0].x, pts[0].y); pts.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+                        } else if (pts.length === 1) { 
+                            ctx.beginPath(); ctx.strokeStyle = "#ff0000"; ctx.lineWidth = 2;
+                            ctx.arc(pts[0].x, pts[0].y, 2, 0, Math.PI * 2); ctx.stroke();
+                        }
+                    });
+
+                    const baseSize = 5 * config.fontScale; 
+                    ctx.font = `bold ${baseSize}px sans-serif`;
+                    ctx.textAlign = "center";
+                    const txt = data[config.labelField] || "---";
+                    
+                    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"; ctx.lineJoin = "round";
+                    ctx.strokeText(txt, labelPt.x, labelPt.y - (baseSize + 1));
+                    ctx.fillStyle = "#ff0000";
+                    ctx.fillText(txt, labelPt.x, labelPt.y - (baseSize + 1));
+                }
+            });
+
+            if (config.showCompass) this.drawNorthArrow(ctx, mapSize.x, mapSize.y);
+            
+            if (config.showScale) {
+                this.drawScaleBar(ctx, mapSize.x, mapSize.y);
+                this.drawLegend(ctx, mapSize.x, mapSize.y, config.labelField);
+            } else {
+                this.drawLegend(ctx, mapSize.x, mapSize.y, config.labelField);
+            }
+
+            const link = document.createElement('a');
+            const now = new Date();
+            const timeStr = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
+            link.download = `GlobalMap_${timeStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+        } catch(e) {
+            alert("出力エラー: " + e.message);
+        } finally {
+            managerApp.hideProgress();
+        }
+    },
+
+    drawNorthArrow(ctx, w, h) {
+        const size = 40; const x = w - 50; const y = 50;
+        ctx.save(); ctx.translate(x, y);
+        ctx.fillStyle = "#333"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center"; ctx.fillText("N", 0, -size/2 - 5);
+        ctx.beginPath(); ctx.moveTo(0, -size/2); ctx.lineTo(10, size/2); ctx.lineTo(0, size/2 - 10); ctx.lineTo(-10, size/2); ctx.closePath();
+        ctx.fillStyle = "#333"; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = "#fff"; ctx.stroke();
+        ctx.restore();
+    },
+
+    drawScaleBar(ctx, w, h) {
+        const centerLatLng = this.map.getCenter();
+        const y = centerLatLng.lat; const zoom = this.map.getZoom();
+        const metersPerPx = 40075017 * Math.cos(y * Math.PI / 180) / Math.pow(2, zoom + 8);
+        const targetPx = 100; const rawMeters = targetPx * metersPerPx;
+        let displayMeters;
+        if (rawMeters > 1000) displayMeters = Math.round(rawMeters / 1000) * 1000;
+        else if (rawMeters > 100) displayMeters = Math.round(rawMeters / 100) * 100;
+        else displayMeters = Math.round(rawMeters / 10) * 10;
+        if (displayMeters === 0) displayMeters = 10;
+        const barPx = displayMeters / metersPerPx;
+        const label = displayMeters >= 1000 ? (displayMeters/1000) + "km" : displayMeters + "m";
+        const bx = w - 20 - barPx; const by = h - 50;
+        ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.fillStyle = "#000"; ctx.font = "12px sans-serif"; ctx.textAlign = "center";
+        ctx.beginPath(); ctx.moveTo(bx, by - 5); ctx.lineTo(bx, by); ctx.lineTo(bx + barPx, by); ctx.lineTo(bx + barPx, by - 5); ctx.stroke();
+        ctx.fillText(label, bx + barPx/2, by - 8); ctx.restore();
+    },
+
+    drawLegend(ctx, w, h, labelKey) {
+        const fm = window.managerApp.fieldMaster;
+        const labelName = (fm[labelKey] && fm[labelKey].label) ? fm[labelKey].label : labelKey;
+        const text = `[ラベル：${labelName}]`;
+        const x = w - 20; const y = h - 20;
+        ctx.save();
+        ctx.fillStyle = "#333"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+        ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; ctx.lineJoin = "round";
+        ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
+        ctx.restore();
+    },
+
+    async captureMapFinal(data) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const center = managerApp.getCenterOfGeom(data.mainGeom);
+                const targetCanvas = document.createElement('canvas'); 
+                targetCanvas.width = 600; targetCanvas.height = 400;
+                const ctx = targetCanvas.getContext('2d'); 
+                
+                if (!center) { 
+                    ctx.fillStyle = "#fff"; ctx.fillRect(0,0,600,400);
+                    ctx.fillStyle = "#999"; ctx.textAlign = "center"; ctx.fillText("(位置図データなし)", 300, 200); 
+                    return resolve({ zentai: targetCanvas.toDataURL('image/jpeg'), kakudai: targetCanvas.toDataURL('image/jpeg') });
+                }
+
+                const tempLayers =[];
+                this.map.eachLayer(l => { 
+                    if (!(l instanceof L.TileLayer)) { tempLayers.push(l); this.map.removeLayer(l); } 
+                });
+
+                const renderView = async (renderMode) => {
+                    const feature = data.mainGeom.features[0];
+                    if (feature.geometry.type === "Point") {
+                        const z = (renderMode === 'targetOnly') ? 14 : 17;
+                        this.map.setView(center, z, { animate: false });
+                    } else {
+                        const bounds = L.geoJSON(data.mainGeom).getBounds();
+                        const padRatio = (renderMode === 'targetOnly') ? 4.5 : 1.0; 
+                        this.map.fitBounds(bounds.pad(padRatio), { animate: false });
+                    }
+                    
+                    await this.waitForTiles();
+
+                    ctx.fillStyle = "#fff"; ctx.fillRect(0,0,600,400);
+                    
+                    const mapRect = document.getElementById('map').getBoundingClientRect();
+                    const tiles = Array.from(document.querySelectorAll('.leaflet-tile-pane img'));
+                    const mapCenterX = mapRect.width / 2;
+                    const mapCenterY = mapRect.height / 2;
+                    const offsetX = 300 - mapCenterX;
+                    const offsetY = 200 - mapCenterY;
+
+                    tiles.forEach(tile => {
+                        const r = tile.getBoundingClientRect();
+                        const x = r.left - mapRect.left;
+                        const y = r.top - mapRect.top;
+                        if (r.width > 0 && r.height > 0) {
+                            try {
+                                if (tile.naturalWidth > 0) {
+                                    ctx.drawImage(tile, x + offsetX, y + offsetY, r.width, r.height);
+                                }
+                            } catch(e) { }
+                        }
+                    });
+
+                    const drawGeom = (geom, color, weight, isGlow) => {
+                        if(!geom) return;
+                        L.geoJSON(geom).eachLayer(l => {
+                            const pts =[];
+                            const toCanvasPt = (latlng) => {
+                                const p = this.map.latLngToContainerPoint(latlng);
+                                return { x: p.x + offsetX, y: p.y + offsetY };
+                            };
+
+                            if (l.getLatLngs) { 
+                                const r = l.getLatLngs(); 
+                                (Array.isArray(r[0]) ? r[0] : r).forEach(ll => pts.push(toCanvasPt(ll))); 
+                            } else if (l.getLatLng) { 
+                                pts.push(toCanvasPt(l.getLatLng())); 
+                            }
+
+                            if (pts.length > 1) { 
+                                ctx.beginPath(); 
+                                ctx.strokeStyle = color; 
+                                ctx.lineWidth = weight; 
+                                ctx.lineJoin = "round"; ctx.lineCap = "round"; 
+                                ctx.globalAlpha = isGlow ? 0.5 : 1.0;
+                                ctx.moveTo(pts[0].x, pts[0].y); 
+                                pts.forEach(p => ctx.lineTo(p.x, p.y)); 
+                                if (l instanceof L.Polygon) ctx.closePath(); 
+                                ctx.stroke(); 
+                                if (l instanceof L.Polygon && !isGlow) { 
+                                    ctx.fillStyle = color; ctx.globalAlpha = 0.2; ctx.fill(); 
+                                } 
+                            } else if (pts.length === 1) { 
+                                ctx.beginPath();
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = isGlow ? 6 : 3; 
+                                ctx.globalAlpha = isGlow ? 0.4 : 1.0;
+                                const r = isGlow ? 8 : 3;
+                                ctx.arc(pts[0].x, pts[0].y, r, 0, Math.PI * 2);
+                                ctx.stroke();
+                            }
+                        });
+                    };
+
+                    this.db.forEach(od => { 
+                        const isTarget = (od._key === data._key);
+                        if (renderMode === 'targetOnly') {
+                            if (isTarget) { drawGeom(od.mainGeom, "#ff0000", 6, false); }
+                        } else {
+                            if (isTarget) { drawGeom(od.mainGeom, "#f1c40f", 14, true); drawGeom(od.mainGeom, "#ff0000", 6, false); }
+                            else { drawGeom(od.mainGeom, "#ff0000", 5, false); }
+                        }
+                    });
+
+                    return targetCanvas.toDataURL('image/jpeg', 0.8);
+                };
+
+                const imgKakudai = await renderView('all');
+                const imgZentai = await renderView('targetOnly');
+
+                tempLayers.forEach(l => this.map.addLayer(l));
+                resolve({ zentai: imgZentai, kakudai: imgKakudai });
+
+            } catch (err) {
+                console.error("Map Capture Error:", err);
+                reject(err);
+            }
+        });
+    },
+
+    fillSVG(tpl, data, maps, isP2) {
+        const doc = new DOMParser().parseFromString(document.getElementById(tpl).innerHTML, 'image/svg+xml');
+        
+        const fs = { ...data };
+        if (window.managerApp.fieldMaster) {
+            Object.keys(window.managerApp.fieldMaster).forEach(k => {
+                if (fs[k] === undefined || fs[k] === null) fs[k] = "-";
+            });
+        }["survey_date", "damage_date"].forEach(k => { if(fs[k]) fs[k] = managerApp.formatWareki(fs[k]); });
+        fs.start_coord = managerApp.getCoordsText(data);
+
+        const check = (id, v) => {
+            const isY = (v === '有');
+            doc.querySelectorAll('rect').forEach(r => {
+                const cid = r.id.replace(/_x5F_/g, '_');
+                if (cid.startsWith(id)) {
+                    const isT = cid.includes('true'), isF = cid.includes('fulse')||cid.includes('false');
+                    if (isT) managerApp.replaceRectWithText(doc, r, isY ? '✓' : '', { alignH: 'center', size: 14 });
+                    else if (isF) managerApp.replaceRectWithText(doc, r, !isY ? '✓' : '', { alignH: 'center', size: 14 });
+                }
+            });
+        };
+        check('expansion', data.expansion_exists); check('special', data.special_exists);
+        
+        doc.querySelectorAll('rect').forEach(rect => {
+            if (!rect.parentNode || rect.id.includes('枠')) return;
+            const id = rect.id.replace(/_x5F_/g, '_').replace(/_[0-9]_$/, '');
+            if (maps && id === 'ichizu_zentai') { managerApp.replaceRectWithImage(doc, rect, maps.zentai); return; }
+            if (maps && id === 'ichizu_kakudai') { managerApp.replaceRectWithImage(doc, rect, maps.kakudai); return; }
+            if (isP2 && (id === 'photo_zenkei' || id === 'photo_kinkei')) {
+                const tag = (id === 'photo_zenkei' ? '全景' : '近景');
+                const p = data._photos.find(x => x.tag === tag);
+                if (p) managerApp.replaceRectWithImage(doc, rect, p.dataUrl);
+                else managerApp.replaceRectWithText(doc, rect, "（写真なし）", { alignH: 'center' });
+                return;
+            }
+            if (id.includes('comment') && (id.includes('zenkei') || id.includes('kinkei'))) { 
+                managerApp.replaceRectWithText(doc, rect, fs[id] || ""); 
+            } else if (fs[id] !== undefined) { 
+                managerApp.replaceRectWithText(doc, rect, fs[id]); 
+            }
+        });
+        return new XMLSerializer().serializeToString(doc);
+    },
+
+    fillPhotoBook(ps, data) {
+        const doc = new DOMParser().parseFromString(document.getElementById('tpl-p3').innerHTML, 'image/svg+xml');
+        const fs = { ...data }; ["survey_date", "damage_date"].forEach(k => { if(fs[k]) fs[k] = managerApp.formatWareki(fs[k]); });
+        doc.querySelectorAll('rect').forEach(r => {
+            if (!r.parentNode || r.id.includes('枠')) return;
+            const id = r.id.replace(/_x5F_/g, '_');
+            const m = id.match(/photo_([1-3])/);
+            if (m) {
+                const idx = parseInt(m[1]) - 1;
+                if (ps[idx]) managerApp.replaceRectWithImage(doc, r, ps[idx].dataUrl);
+                else managerApp.replaceRectWithText(doc, r, "（写真なし）", { alignH: 'center' });
+                return;
+            }
+            if (id.includes('photo_comment')) {
+                const idx = id === 'photo_comment' ? 0 : (id.match(/[1-2]/) ? parseInt(id.match(/[1-2]/)[0]) : 0);
+                managerApp.replaceRectWithText(doc, r, ps[idx] ? (ps[idx].memo || "") : "", { alignV: 'top' });
+                return;
+            }
+            const key = id.replace(/_[0-9]_$/, '');
+            if (fs[key] !== undefined) managerApp.replaceRectWithText(doc, r, fs[key] || "-");
+        });
+        return new XMLSerializer().serializeToString(doc);
+    },
+
+    // --- 長文折り返し対応 (Update) ---
+    replaceRectWithText(doc, rect, text, opt = {}) {
+        const x = parseFloat(rect.getAttribute('x')), y = parseFloat(rect.getAttribute('y')), 
+              w = parseFloat(rect.getAttribute('width')), h = parseFloat(rect.getAttribute('height'));
+        const size = opt.size || 10; 
+        
+        if (text === "") return rect.parentNode.removeChild(rect);
+
+        // 短い記号（チェックマークなど）は従来通り text 要素で正確に配置
+        if (text === "-" || text === "✓") {
+            const nt = doc.createElementNS("http://www.w3.org/2000/svg", "text");
+            let posY = (opt.alignV === 'top') ? y + size : y + (h / 2) + (size / 3);
+            let posX = (opt.alignH === 'center') ? x + (w / 2) : x + 3;
+            nt.setAttribute("x", posX); nt.setAttribute("y", posY);
+            nt.setAttribute("font-family", "sans-serif"); nt.setAttribute("font-size", size);
+            if (opt.alignH === 'center') nt.setAttribute("text-anchor", "middle");
+            nt.textContent = text;
+            rect.parentNode.replaceChild(nt, rect);
+            return;
+        }
+
+        // 一般テキストは foreignObject と div で自動折り返し対応
+        const fo = doc.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        fo.setAttribute("x", x);
+        fo.setAttribute("y", y);
+        fo.setAttribute("width", w);
+        fo.setAttribute("height", h);
+        
+        const div = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
+        div.style.width = "100%";
+        div.style.height = "100%";
+        div.style.fontFamily = "sans-serif";
+        div.style.fontSize = size + "px";
+        div.style.boxSizing = "border-box";
+        div.style.overflow = "hidden"; // はみ出し防止
+        div.style.whiteSpace = "pre-wrap"; // 改行維持
+        div.style.wordWrap = "break-word"; // 単語途中でも折り返す
+        div.style.lineHeight = "1.2";
+
+        if (opt.alignH === 'center') {
+            div.style.display = "flex";
+            div.style.justifyContent = "center";
+            div.style.alignItems = "center";
+            div.style.textAlign = "center";
+        } else if (opt.alignV === 'top') {
+            div.style.padding = "2px";
+        } else {
+            div.style.display = "flex";
+            div.style.alignItems = "center";
+            div.style.paddingLeft = "4px";
+        }
+        
+        div.textContent = text;
+        fo.appendChild(div);
+        rect.parentNode.replaceChild(fo, rect);
+    },
+
+    replaceRectWithImage(doc, rect, url) { /* 省略 */ rect.parentNode.replaceChild(img, rect); },
+    getCoordsText(d) { /* 省略 */ return `${fmt(pts[0])} ～ ${fmt(pts[pts.length-1])}`; }
+});
+</script>
+</body>
+</html>
