@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.55)</title>
+    <title>被災状況調査アプリ (Phase 5.57)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -422,17 +422,29 @@ canvas.sketch-canvas { display: block; width: 100%; }
         </ol>
     </div>
 
-    <div style="font-size: 0.8rem; color: #666; background: #eee; padding: 10px; border-radius: 4px;">
+    <div style="font-size: 0.8rem; color: #666; background: #eee; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
         <strong>注意:</strong> PCでHTMLファイルを直接開いている場合、保存機能などが一部制限されることがあります。
         さくらサーバー等のWebサーバーにアップロードしてからご利用ください。
     </div>
+
+    <div class="guide-block" style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #2c3e50;">
+        <h3 style="margin-top:0; color: #2c3e50;">統合管理版アプリのダウンロード</h3>
+        <p style="font-size: 0.9rem; margin-bottom: 15px;">
+            現場用アプリで収集したJZIPデータを取りまとめる<strong>統合管理版（PC用）</strong>はこちらからダウンロードできます。
+        </p>
+        <a href="https://github.com/kspa-joho/shodo-chosa/raw/main/manager_app.zip"
+           style="display: block; width: 100%; padding: 12px; background: #2c3e50; color: white; text-align: center; border-radius: 4px; font-weight: bold; font-size: 1rem; text-decoration: none; box-sizing: border-box;">
+            ⬇ 統合管理版をダウンロード（ZIP）
+        </a>
+    </div>
 </div>
+
             </section>
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.55)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.55 (map init defer to accordion open)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.57)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.57 (install_guide 統合管理版DLリンク追加)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -473,6 +485,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・プリセット・更新確認</td></tr>
             <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理</td></tr>
             <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>スタンドアロン起動・アイコン定義</td></tr>
+            <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡して同期させる。</td></tr>
             <tr><td><code>piexif.js</code></td><td>EXIFライブラリ</td><td>piexifjs v1.0.6。src/直下に配置しビルド時にインライン埋め込み</td></tr>
             <tr><td><code>rogo-AAA.txt</code></td><td>ロゴデータ</td><td>Base64エンコード画像（ビルド時にインライン埋め込み）</td></tr>
         </table>
@@ -505,7 +518,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <li>未取得（グレー）→ lat/lngがnull</li>
                 </ul>
             </li>
-            <li><strong>GPS修正フロー（Phase 5.55改修）:</strong>
+            <li><strong>GPS修正フロー（Phase 5.57改修）:</strong>
                 <ul>
                     <li>「修正」ボタン → modifyGps() → 写真タブを閉じて位置図タブを開く</li>
                     <li>startGpsFixMode()：バナー表示 + 現在ズーム+2（最大18）にズームイン</li>
@@ -563,7 +576,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.55</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.57</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
