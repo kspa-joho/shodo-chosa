@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.59)</title>
+    <title>被災状況調査アプリ (Phase 5.60)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -98,6 +98,8 @@ body { margin: 0; padding: 0; background-color: #666; font-family: sans-serif; d
 .sketch-tool-group:last-child { border: none; }
 .sketch-btn { padding: 6px 10px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 3px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
 .sketch-btn.active { background: var(--accent-color); color: white; border-color: #2980b9; }
+/* モード切替ボタン（位置図タブ内）の非アクティブ時はダーク背景 */
+#mode-btn-map:not(.active), #mode-btn-draw:not(.active), #mode-btn-sketch:not(.active) { background: rgba(255,255,255,0.1); }
 .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.3); padding: 0; cursor: pointer; }
 .color-btn.active { transform: scale(1.2); border-color: #333; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 .sketch-canvas-container { position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: white; cursor: crosshair; touch-action: none; margin-bottom: 5px; }
@@ -152,13 +154,13 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <!-- モード切替：メイン・サブ・白紙メモの3モード -->
             <div style="display:flex; background:#444; color:white; font-size:0.8rem;">
                 <button id="mode-btn-map" class="sketch-btn active"
-                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; background:var(--accent-color); font-size:0.8rem;"
+                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; font-size:0.8rem;"
                     onclick="uiHelper.switchMapMode('map')">メイン(位置)</button>
                 <button id="mode-btn-draw" class="sketch-btn"
-                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; background:rgba(255,255,255,0.1); font-size:0.8rem;"
+                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; font-size:0.8rem;"
                     onclick="uiHelper.switchMapMode('draw')">サブ(落書き)</button>
                 <button id="mode-btn-sketch" class="sketch-btn"
-                    style="flex:1; padding:10px; border:none; color:white; background:rgba(255,255,255,0.1); font-size:0.8rem;"
+                    style="flex:1; padding:10px; border:none; color:white; font-size:0.8rem;"
                     onclick="uiHelper.switchMapMode('sketch')">白紙メモ</button>
             </div>
             <!-- 地図エリア -->
@@ -497,8 +499,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.59)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.59 (白紙メモタブ復活)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.60)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.60 (モード切替ボタンのアクティブ表示修正)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -621,7 +623,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.59</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.60</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
