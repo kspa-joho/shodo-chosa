@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.57)</title>
+    <title>被災状況調査アプリ (Phase 5.58)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -142,13 +142,6 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <span class="icon">+</span>
         </button>
         <div class="accordion-content no-padding">
-            <!-- GPS修正モードバナー（通常時は非表示） -->
-            <div id="gps-fix-banner" style="display:none; background:#e74c3c; color:white; padding:10px 15px; align-items:center; justify-content:space-between; font-size:0.85rem; font-weight:bold;">
-                <span>📍 位置情報を修正する場所をタップしてください</span>
-                <button type="button"
-                    style="background:rgba(255,255,255,0.25); border:1px solid white; color:white; padding:4px 12px; border-radius:4px; font-size:0.8rem; cursor:pointer;"
-                    onclick="mapApp.cancelGpsFixMode(); photoApp._restorePhotoTab();">キャンセル</button>
-            </div>
             <div class="map-mode-selector" style="display:flex; background:#444; color:white; font-size:0.8rem;">
                 <label style="flex:1; padding:10px; text-align:center; border-right:1px solid #666;">
                     <input type="radio" name="map_mode" value="main" checked onchange="mapApp.setMode('main')"> メイン(位置)
@@ -259,44 +252,30 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <button type="button" class="btn-sub" style="flex:1; background:#e74c3c;" onclick="photoApp.delete()">削除</button>
                 </div>
 
-                <!-- 【iPhone対応】inputを2つに分離。
-                     photo-camera-input: capture="environment"・multipleなし → カメラ直起動専用。撮影時にGPSを自動記録。
-                     photo-file-input: captureなし・multiple あり → ファイル選択専用。EXIFからGPSを読む。
-                     処理関数がそれぞれ異なる点に注意。 -->
-                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none"
-                    onchange="photoApp.handleCameraFile(this)">
-                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none"
-                    onchange="photoApp.handleFileSelect(this)">
-
-                <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <button type="button" id="photo-camera-btn" class="btn-main" style="flex:1; background:#95a5a6;"
-                        onclick="document.getElementById('photo-camera-input').click()">
-                        📷 撮影（GPS未取得）
-                    </button>
-                    <button type="button" class="btn-sub" style="flex:1;"
-                        onclick="document.getElementById('photo-file-input').click()">
-                        📁 ファイル選択
-                    </button>
-                </div>
-
                 <!-- 写真の備考 -->
                 <div class="input-group">
                     <label>写真の備考</label>
                     <textarea id="photo-memo" rows="2" oninput="photoApp.updateMemo(this.value)"></textarea>
                 </div>
 
-                <!-- センサー情報エリア -->
+                <!-- ============================================================
+                     センサー情報エリア（方位・GPS）
+                     ・写真タブを開いた瞬間から常時リアルタイム表示。
+                     ・方位・GPSはそれぞれ独立。撮影前後どちらでも任意に記録可能。
+                     ・備考と同じ操作感：記録ボタンで付与、削除ボタンでnullに戻す。
+                     ・0と未記録(null)は別物として管理する。
+                     ============================================================ -->
                 <div style="background:#f0f4f8; border:1px solid #dde3ea; border-radius:4px; padding:10px; margin-bottom:8px;">
 
                     <!-- リアルタイム方位 -->
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                         <span style="font-size:0.78rem; color:#666; white-space:nowrap;">🧭 現在の方位：</span>
-                        <span id="azimuth-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">--</span>
+                        <span id="azimuth-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">（タブを開くと起動）</span>
                     </div>
 
-                    <!-- 撮影方向（記録値） -->
+                    <!-- この写真の方位（記録値） -->
                     <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:5em;">撮影方向：</label>
+                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:7em;">この写真の方位：</label>
                         <input type="number" id="photo-azimuth-input" min="0" max="359" placeholder="未記録"
                             style="width:72px; padding:5px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;"
                             oninput="photoApp.updateAzimuth(this.value)">
@@ -307,13 +286,43 @@ canvas.sketch-canvas { display: block; width: 100%; }
                             onclick="photoApp.clearAzimuth()">削除</button>
                     </div>
 
-                    <!-- 位置情報（○m / 不明 / 未取得） -->
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:5em;">位置情報：</label>
-                        <span id="photo-gps-status" style="flex:1; font-size:0.82rem; font-weight:bold; color:#aaa;">未取得</span>
-                        <button type="button" class="btn-main" style="flex:1; padding:6px; font-size:0.78rem; background:#2c3e50;"
-                            onclick="photoApp.modifyGps()">修正</button>
+                    <!-- リアルタイムGPS -->
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                        <span style="font-size:0.78rem; color:#666; white-space:nowrap;">📍 現在のGPS：</span>
+                        <span id="gps-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">（タブを開くと起動）</span>
                     </div>
+
+                    <!-- この写真のGPS（記録値） -->
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:7em;">この写真のGPS：</label>
+                        <span id="photo-gps-recorded" style="flex:1; font-size:0.78rem; color:#aaa;">未記録</span>
+                        <button type="button" class="btn-main" style="flex:1; padding:6px; font-size:0.78rem; background:#2c3e50;"
+                            onclick="photoApp.recordGps()">記録</button>
+                        <button type="button" class="btn-sub" style="flex:1; padding:6px; font-size:0.78rem; background:#e74c3c;"
+                            onclick="photoApp.clearGps()">削除</button>
+                    </div>
+                </div>
+
+                <!-- 【iPhone対応】inputを2つに分離。
+                     photo-camera-input: capture="environment"・multipleなし → カメラ直起動専用。
+                       iOSでmultipleを付けると動作が不安定になるため1枚専用とする。
+                     photo-file-input: captureなし・multiple あり → ファイル選択専用（複数枚対応）。
+                     どちらも photoApp.handleFile(this) に渡す。処理は共通。 -->
+                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none"
+                    onchange="photoApp.handleFile(this)">
+                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none"
+                    onchange="photoApp.handleFile(this)">
+
+                <div style="display:flex; gap:6px;">
+                    <!-- id="photo-camera-btn" を付けることで gpsManager._updateUI() がボタンラベルを動的に書き換える -->
+                    <button type="button" id="photo-camera-btn" class="btn-main" style="flex:1; background:#2c3e50;"
+                        onclick="document.getElementById('photo-camera-input').click()">
+                        📷 撮影（GPS準備中）
+                    </button>
+                    <button type="button" class="btn-sub" style="flex:1;"
+                        onclick="document.getElementById('photo-file-input').click()">
+                        📁 ファイル選択
+                    </button>
                 </div>
 
             </div>
@@ -388,6 +397,11 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <button type="button" class="btn-sub" onclick="document.getElementById('import-jzip').click()" style="margin-bottom:10px;">JZIP読み込み</button>
             <button type="button" class="btn-sub" onclick="appControl.exportCSV()" style="margin-bottom:10px;">日報用CSVエクスポート（写真なし）</button>
             <hr style="margin: 15px 0;">
+            <!-- 地図キャッシュ開放：Cache Storageの地図タイルを削除する。
+                 LocalStorage（入力データ・プリセット）には影響しない。 -->
+            <button type="button" class="btn-sub" style="background:#7f8c8d; margin-bottom:10px;"
+                onclick="mapCacheManager.clearAllCache()">地図キャッシュを開放する</button>
+            <hr style="margin: 15px 0;">
             <button type="button" class="btn-sub" style="background:#e67e22;" onclick="appControl.exportCurrentApp()">この内容を初期値として保存（html）</button>
         </div>
     </div>
@@ -443,8 +457,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.57)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.57 (install_guide 統合管理版DLリンク追加)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.58)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.58 (地図キャッシュ開放ボタン追加)</p>
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -478,14 +492,14 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>header.html</code></td><td>共通ヘッダー</td><td>ロゴ、タブ（アプリ/アプリ化の手順/開発方針）</td></tr>
             <tr><td><code>introduction.html</code></td><td>アプリ本体UI</td><td>アコーディオン群（管理項目〜入出力）。位置図エリアにGPS修正バナー</td></tr>
             <tr><td><code>spec.html</code></td><td>開発仕様書</td><td>本ファイル（アプリ内「開発方針」タブに埋め込み）</td></tr>
-            <tr><td><code>install_guide.html</code></td><td>インストール手順</td><td>iPhone/Android向けPWA追加手順</td></tr>
-            <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード</td></tr>
+            <tr><td><code>install_guide.html</code></td><td>インストール手順</td><td>iPhone/Android向けPWA追加手順・統合管理版DLリンク</td></tr>
+            <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡して同期させる。</td></tr>
+            <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）</td></tr>
             <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>Canvas描画（ペン/直線/文字/消しゴム/Undo）</td></tr>
             <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
-            <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・プリセット・更新確認</td></tr>
-            <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理</td></tr>
-            <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>スタンドアロン起動・アイコン定義</td></tr>
-            <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡して同期させる。</td></tr>
+            <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・プリセット・更新確認・mapCacheManager</td></tr>
+            <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理（自動キャッシュ方式）</td></tr>
+            <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>start_url/scope=/shodo-chosa/。スタンドアロン起動・アイコン定義</td></tr>
             <tr><td><code>piexif.js</code></td><td>EXIFライブラリ</td><td>piexifjs v1.0.6。src/直下に配置しビルド時にインライン埋め込み</td></tr>
             <tr><td><code>rogo-AAA.txt</code></td><td>ロゴデータ</td><td>Base64エンコード画像（ビルド時にインライン埋め込み）</td></tr>
         </table>
@@ -495,57 +509,47 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>4. 実装仕様とアーキテクチャ</h3>
 
         <h4>4.1 データ構造 (JZIP)</h4>
-        <ul>
-            <li>photoListの各要素：<code>{ fileName, memo, tag, azimuth, lat, lng, gpsAccuracy, gpsFixed }</code></li>
-            <li>azimuth：null=未記録 / 整数(度)。0は真北で有効値。</li>
-            <li>lat/lng：null=未取得 / 数値。</li>
-            <li>gpsAccuracy：null=精度不明 / 数値(m)=精度あり（撮影時自動記録）。</li>
-            <li>gpsFixed：false=通常 / true=地図タップ修正済み。</li>
-            <li>fn1〜fn5（ファイル名構成用select）はJZIPに含めない。</li>
-        </ul>
+        <p>詳細は <code>jzip_spec.html</code> を参照。photoListの各要素：<code>{ fileName, memo, tag, azimuth, lat, lng, gpsAccuracy, gpsFixed }</code></p>
 
         <h4>4.2 写真機能</h4>
         <ul>
-            <li><strong>写真エリアのUI配置順（確定）:</strong>
-                ナビゲーション → プレビュー → タグ・削除 →
-                📷撮影ボタン・📁ファイル選択ボタン → 写真の備考 → センサーエリア（撮影方向・位置情報）
-            </li>
-            <li><strong>位置情報の4状態:</strong>
-                <ul>
-                    <li>○m（緑/橙）→ gpsAccuracyが数値（撮影時自動記録）</li>
-                    <li>修正済み（青）→ gpsFixed=true（地図タップ修正後）。座標を小数4桁で表示</li>
-                    <li>不明（橙）→ lat/lngはあるがgpsAccuracy=null・gpsFixed=false（EXIFから読んだ場合）</li>
-                    <li>未取得（グレー）→ lat/lngがnull</li>
-                </ul>
-            </li>
-            <li><strong>GPS修正フロー（Phase 5.57改修）:</strong>
-                <ul>
-                    <li>「修正」ボタン → modifyGps() → 写真タブを閉じて位置図タブを開く</li>
-                    <li>startGpsFixMode()：バナー表示 + 現在ズーム+2（最大18）にズームイン</li>
-                    <li>既存GPSがあればその位置へ、なければgpsManagerの現在地へ、どちらもなければズームのみ</li>
-                    <li>地図タップ → applyGpsFix(lat, lng) → gpsFixed=trueで記録 → 写真タブに戻る</li>
-                    <li>キャンセル → cancelGpsFixMode() + _restorePhotoTab() → 写真タブに戻る</li>
-                </ul>
-            </li>
-            <li><strong>inputの役割分担（確定）:</strong>
-                <ul>
-                    <li>photo-camera-input → handleCameraFile()：撮影時にgpsManagerの現在値を自動記録。</li>
-                    <li>photo-file-input → handleFileSelect()：EXIFからGPS座標を読む。gpsAccuracy=null。</li>
-                </ul>
-            </li>
+            <li><strong>写真エリアのUI配置順（確定）:</strong> ナビゲーション → プレビュー → タグ・削除 → 📷撮影・📁ファイル選択 → 写真の備考 → センサーエリア（撮影方向・位置情報）</li>
+            <li><strong>カメラinput分離（iPhone対応）:</strong> photo-camera-input（handleCameraFile・GPS自動記録）/ photo-file-input（handleFileSelect・EXIF読み込み）</li>
+            <li><strong>撮影ボタン:</strong> 「誤差○m」を直接表示。未取得時は点滅。GPS起動はDOMContentLoadedで実施。</li>
+            <li><strong>位置情報4状態:</strong> ○m（精度あり）/ 修正済み（地図タップ後・青）/ 不明（EXIFから）/ 未取得</li>
+            <li><strong>GPS修正フロー:</strong> 修正ボタン→写真タブ閉じ→位置図タブ開く（現在ズーム+2）→地図タップ→写真タブに戻る</li>
+            <li><strong>JZIPエクスポート時のEXIF書き込み:</strong> piexifjsでGPS座標・方位をJPEGに書き込む。エラー時フォールバック。</li>
+            <li><strong>リサイズ横幅指定:</strong> 入出力タグで800/1200/1600/2000px・なしを選択。デフォルト1200px。</li>
         </ul>
 
-        <h4>4.3 オートセーブ仕様</h4>
-        <ul>
-            <li>保存先：LocalStorage（キー: survey_app_autosave）</li>
-            <li>写真はdataUrlを保存しない。メタ情報（tag・memo・azimuth・lat・lng・gpsAccuracy・gpsFixed）のみ保存。</li>
-        </ul>
-
-        <h4>4.4 地図機能</h4>
+        <h4>4.3 地図機能</h4>
         <ul>
             <li>ポリライン描画の完了はボタン専用（マーカータップ無効）。</li>
             <li>モード：位置図（メイン・赤）/ 地図メモ（サブ・青）/ 白紙メモ（Canvas）/ GPS修正モード</li>
-            <li>GPS修正モード中はclickイベントのみ使用。Leaflet.Drawと独立して動作。</li>
+            <li><strong>maxZoom:25（オーバーズーム対応）:</strong> maxNativeZoom:18（地理院）/19（ESRI）でタイルを拡大表示。</li>
+            <li><strong>地図初期化タイミング:</strong> storageManager.load()では初期化せず、アコーディオンを開いたときにinvalidateSize()→ペンディングデータ復元の順で実行。DOMサイズ0での初期化を防ぐ。</li>
+            <li><strong>地図キャッシュ:</strong> 表示したタイルを自動でCache Storageに蓄積（Stale-While-Revalidate方式）。意図的な一括先読み機能はUI非搭載。</li>
+        </ul>
+
+        <h4>4.4 キャッシュ管理</h4>
+        <ul>
+            <li><strong>自動キャッシュ:</strong> 地図表示時に自動でタイルをキャッシュ。ユーザー操作不要。</li>
+            <li><strong>キャッシュ開放:</strong> 入出力データ操作タブの「地図キャッシュを開放する」ボタンでCache Storageを削除。LocalStorage（入力データ・プリセット）には影響しない。</li>
+            <li><strong>iOSの注意:</strong> ストレージ不足時にiOSがPWAのキャッシュを自動削除する場合がある。その際は再度地図を表示してキャッシュを再蓄積する。</li>
+        </ul>
+
+        <h4>4.5 オートセーブ仕様</h4>
+        <ul>
+            <li>保存先：LocalStorage（キー: survey_app_autosave）</li>
+            <li>写真はdataUrlを保存しない。メタ情報（tag・memo・azimuth・lat・lng・gpsAccuracy・gpsFixed）のみ保存。</li>
+            <li>復元時はメタ情報のみ復元。実画像はJZIP読み込みで復元する運用。</li>
+        </ul>
+
+        <h4>4.6 PWA・デプロイ</h4>
+        <ul>
+            <li>GitHub Pages: <code>https://kspa-joho.github.io/shodo-chosa/</code></li>
+            <li>manifest.jsonのstart_url/scope: <code>/shodo-chosa/</code></li>
+            <li>Service Workerによる完全オフライン起動。更新確認ボタンでPhase番号比較・手動更新。</li>
         </ul>
     </section>
 
@@ -553,10 +557,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>5. 重要な決定事項</h3>
         <ul>
             <li><strong>開発元:</strong> Google AI Studio → Claude（Anthropic）に移行。</li>
-            <li><strong>カメラinput分離方針:</strong> 今後変更しない。</li>
-            <li><strong>位置情報の削除ボタン廃止:</strong> 誤操作防止のため削除ボタンは設けない。</li>
-            <li><strong>地図タップ修正後はgpsFixed=true:</strong> gpsAccuracyはnullのまま。表示は「修正済み（座標）」。</li>
-            <li><strong>GPS修正モードのズーム:</strong> 現在ズーム+2（最大18）。既存GPS→その位置、現在地→現在地、どちらもなし→ズームのみ。</li>
+            <li><strong>カメラinput分離方針:</strong> iOSのmultiple不安定問題を根本解決。今後変更しない。</li>
+            <li><strong>位置情報の削除ボタン廃止:</strong> 誤操作防止のため削除ボタンは設けない。修正は地図タップ上書きのみ。</li>
+            <li><strong>EXIFはエクスポート時に書き込む:</strong> リサイズ時にEXIFが消えるため、JZIP生成時にpiexifjsで書き直す。</li>
+            <li><strong>地図タップ修正後はgpsFixed=true:</strong> gpsAccuracyはnull。表示は「修正済み（座標）」。</li>
+            <li><strong>地図キャッシュは自動蓄積方式:</strong> 意図的な一括先読みUIは搭載しない。キャッシュ開放のみUIで提供。</li>
+            <li><strong>地図初期化はアコーディオンopen時:</strong> DOMサイズ0での初期化バグを防ぐため確定。今後変更しない。</li>
             <li><strong>iPhone動作確認:</strong> 部会メンバーへのお披露目時に実機確認を行う。</li>
         </ul>
     </section>
@@ -564,11 +570,10 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <section>
         <h3>6. 次に行うタスクの積み残し</h3>
         <ul>
-            <li>地図タップ修正の動作確認（Androidスマホで検証）</li>
             <li>iPhone実機での方位センサー・カメラ・GPS動作確認（部会お披露目時）</li>
-            <li>App B帳票への方位・GPS出力対応（要検討）</li>
+            <li>App B帳票への方位・GPS出力対応（要検討・AppBスレッドで実施）</li>
             <li>試験運用後の現場フィードバック反映</li>
-            <li>App Bとのフィールド定義の整合確認（継続管理）</li>
+            <li>App Bとのフィールド定義の整合確認（jzip_spec.htmlで管理）</li>
         </ul>
     </section>
 
@@ -576,7 +581,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.57</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.58</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
