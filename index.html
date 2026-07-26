@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.58)</title>
+    <title>被災状況調査アプリ (Phase 5.59)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -142,19 +142,59 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <span class="icon">+</span>
         </button>
         <div class="accordion-content no-padding">
-            <div class="map-mode-selector" style="display:flex; background:#444; color:white; font-size:0.8rem;">
-                <label style="flex:1; padding:10px; text-align:center; border-right:1px solid #666;">
-                    <input type="radio" name="map_mode" value="main" checked onchange="mapApp.setMode('main')"> メイン(位置)
-                </label>
-                <label style="flex:1; padding:10px; text-align:center;">
-                    <input type="radio" name="map_mode" value="sub" onchange="mapApp.setMode('sub')"> サブ(落書き)
-                </label>
+            <!-- GPS修正モードバナー（通常時は非表示） -->
+            <div id="gps-fix-banner" style="display:none; background:#e74c3c; color:white; padding:10px 15px; align-items:center; justify-content:space-between; font-size:0.85rem; font-weight:bold;">
+                <span>📍 位置情報を修正する場所をタップしてください</span>
+                <button type="button"
+                    style="background:rgba(255,255,255,0.25); border:1px solid white; color:white; padding:4px 12px; border-radius:4px; font-size:0.8rem; cursor:pointer;"
+                    onclick="mapApp.cancelGpsFixMode(); photoApp._restorePhotoTab();">キャンセル</button>
             </div>
-            <div id="map" style="height: 55vh; width: 100%;"></div>
-            <div class="map-controls">
-                <button type="button" onclick="mapApp.setCurrentLocation()">現在地</button>
-                <button type="button" style="background:#e67e22; color:white;" onclick="mapApp.captureToPhoto()">地図を写真に保存</button>
-                <button type="button" onclick="mapApp.clearLayers()">全て消去</button>
+            <!-- モード切替：メイン・サブ・白紙メモの3モード -->
+            <div style="display:flex; background:#444; color:white; font-size:0.8rem;">
+                <button id="mode-btn-map" class="sketch-btn active"
+                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; background:var(--accent-color); font-size:0.8rem;"
+                    onclick="uiHelper.switchMapMode('map')">メイン(位置)</button>
+                <button id="mode-btn-draw" class="sketch-btn"
+                    style="flex:1; padding:10px; border:none; border-right:1px solid #666; color:white; background:rgba(255,255,255,0.1); font-size:0.8rem;"
+                    onclick="uiHelper.switchMapMode('draw')">サブ(落書き)</button>
+                <button id="mode-btn-sketch" class="sketch-btn"
+                    style="flex:1; padding:10px; border:none; color:white; background:rgba(255,255,255,0.1); font-size:0.8rem;"
+                    onclick="uiHelper.switchMapMode('sketch')">白紙メモ</button>
+            </div>
+            <!-- 地図エリア -->
+            <div id="map-container">
+                <div id="map" style="height: 55vh; width: 100%;"></div>
+                <div class="map-controls">
+                    <button type="button" onclick="mapApp.setCurrentLocation()">現在地</button>
+                    <button type="button" style="background:#e67e22; color:white;" onclick="mapApp.captureToPhoto()">地図を写真に保存</button>
+                    <button type="button" onclick="mapApp.clearLayers()">全て消去</button>
+                </div>
+            </div>
+            <!-- 白紙メモエリア -->
+            <div id="sketch-container" style="display:none;">
+                <div class="sketch-toolbar">
+                    <div class="sketch-tool-group">
+                        <button id="sk-free"   class="sketch-btn active" onclick="sketchApp.setTool('free')">ペン</button>
+                        <button id="sk-line"   class="sketch-btn"        onclick="sketchApp.setTool('line')">直線</button>
+                        <button id="sk-text"   class="sketch-btn"        onclick="sketchApp.setTool('text')">文字</button>
+                        <button id="sk-eraser" class="sketch-btn"        onclick="sketchApp.setTool('eraser')">消ゴム</button>
+                    </div>
+                    <div class="sketch-tool-group">
+                        <button class="color-btn active" style="background:black;" onclick="sketchApp.setColor('black',this)"></button>
+                        <button class="color-btn"        style="background:red;"   onclick="sketchApp.setColor('red',this)"></button>
+                        <button class="color-btn"        style="background:blue;"  onclick="sketchApp.setColor('blue',this)"></button>
+                    </div>
+                    <div class="sketch-tool-group">
+                        <button class="sketch-btn" onclick="sketchApp.undo()">戻る</button>
+                    </div>
+                </div>
+                <div class="sketch-canvas-container">
+                    <canvas id="sketch-canvas" class="sketch-canvas"></canvas>
+                </div>
+                <div style="display:flex; gap:5px; padding:5px;">
+                    <button class="btn-sub" style="flex:1; background:#c0392b;" onclick="sketchApp.clearAll()">全消去</button>
+                    <button class="btn-main" style="flex:1;" onclick="sketchApp.saveToPhoto()">写真に保存</button>
+                </div>
             </div>
         </div>
     </div>
@@ -457,8 +497,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.58)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.58 (地図キャッシュ開放ボタン追加)</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.59)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.59 (白紙メモタブ復活)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -581,7 +621,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.58</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.59</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
