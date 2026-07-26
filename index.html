@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.62)</title>
+    <title>被災状況調査アプリ (Phase 5.63)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -447,7 +447,17 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <button type="button" class="btn-sub" style="background:#7f8c8d; margin-bottom:10px;"
                 onclick="mapCacheManager.clearAllCache()">地図キャッシュを開放する</button>
             <hr style="margin: 15px 0;">
-            <button type="button" class="btn-sub" style="background:#e67e22;" onclick="appControl.saveDefaults()">初期値として保存</button>
+            <!-- 初期値・クリア操作グループ -->
+            <button type="button" class="btn-sub" style="background:#e67e22; margin-bottom:6px;"
+                onclick="appControl.saveDefaults()">初期値として保存</button>
+            <div style="display:flex; gap:6px; margin-bottom:6px;">
+                <button type="button" class="btn-sub" style="flex:1; background:#c0392b;"
+                    onclick="appControl.clearAll(false)">クリア（初期値を残す）</button>
+                <button type="button" class="btn-sub" style="flex:1; background:#922b21;"
+                    onclick="appControl.clearAll(true)">クリア（全未入力）</button>
+            </div>
+            <button type="button" class="btn-sub" style="background:#7f8c8d; margin-bottom:10px;"
+                onclick="appControl.applyDefaults()">初期値の読み込み</button>
         </div>
     </div>
 </div>
@@ -502,8 +512,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.62)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.62 (SW自動更新通知・skip-waiting)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.63)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.63 (クリア機能・applyDefaults追加)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -626,7 +636,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.62</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.63</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -4506,33 +4516,93 @@ window.appControl = {
             });
     },
     // ---- 初期値をLocalStorageに保存 ----
-    // 保存内容：会社情報・出力ファイル名構成・写真設定
-    // 起動時に自動で読み込まれる（DOMContentLoaded内でloadDefaults()を呼ぶ）
     saveDefaults() {
         const DEFAULTS_KEY = 'survey_app_defaults';
         const d = {};
-        // 会社情報・調査者情報
         ['company_id','leader_name','company_name','tel','fax','person_name','email'].forEach(k => {
             const el = document.querySelector(`[name="${k}"]`);
             if (el) d[k] = el.value;
         });
-        // 出力ファイル名構成
         ['fn1','fn2','fn3','fn4','fn5'].forEach(id => {
             const el = document.getElementById(id);
             if (el) d[id] = el.value;
         });
-        // 写真設定
         const resizeSel = document.getElementById('photo-resize-width');
         if (resizeSel) d.photo_resize_width = resizeSel.value;
         const force43cb = document.getElementById('photo-force-43');
         if (force43cb) d.photo_force_43 = force43cb.checked;
-
         try {
             localStorage.setItem(DEFAULTS_KEY, JSON.stringify(d));
             window.uiHelper && uiHelper.showToast("初期値を保存しました");
-        } catch(e) {
-            alert("保存に失敗しました: " + e.message);
+        } catch(e) { alert("保存に失敗しました: " + e.message); }
+    },
+
+    // ---- 全クリア ----
+    // fullClear=true → 全未入力、false → クリア後に初期値を適用
+    // 初期値のLocalStorageは削除しない
+    clearAll(fullClear) {
+        const msg = fullClear
+            ? "全ての入力内容・写真・地図を消去します。\n本当に消しますか？"
+            : "入力内容・写真・地図を消去し、初期値を適用します。\n本当に消しますか？";
+        if (!confirm(msg)) return;
+
+        // フォームリセット
+        document.querySelectorAll('.accordion-item input, .accordion-item select, .accordion-item textarea').forEach(el => {
+            if (el.type === 'file' || el.type === 'radio' || el.type === 'checkbox') return;
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = '';
+        });
+
+        // 写真クリア
+        if (window.photoApp) {
+            photoApp.photos = [];
+            photoApp.currentIndex = -1;
+            photoApp.render();
+            photoApp.updateHeaderSummary();
         }
+
+        // 地図クリア
+        if (window.mapApp && mapApp.allDrawnItems) {
+            mapApp.allDrawnItems.clearLayers();
+            mapApp.updateMapSummary();
+        }
+
+        // 白紙メモクリア
+        if (window.sketchApp && sketchApp.ctx) {
+            sketchApp.clearCanvas();
+        }
+
+        // オートセーブクリア
+        try { localStorage.removeItem('survey_app_autosave'); } catch(e) {}
+
+        // サマリー更新
+        document.querySelectorAll('.accordion-item').forEach(item => {
+            const s = item.querySelector('.summary-text');
+            if (s && !['map-area','photo-area','io-area'].includes(item.dataset.group)) {
+                s.textContent = '未入力';
+                s.classList.remove('filled');
+                s.classList.add('empty');
+            }
+        });
+
+        // 初期値を残す場合は適用
+        if (!fullClear) {
+            this.loadDefaults();
+            window.uiHelper && uiHelper.showToast("クリアしました（初期値を適用）");
+        } else {
+            window.uiHelper && uiHelper.showToast("全てクリアしました");
+        }
+    },
+
+    // ---- 初期値の読み込み（入力内容はそのまま・初期値フィールドのみ上書き） ----
+    applyDefaults() {
+        const DEFAULTS_KEY = 'survey_app_defaults';
+        try {
+            const jsonStr = localStorage.getItem(DEFAULTS_KEY);
+            if (!jsonStr) { window.uiHelper && uiHelper.showToast("初期値が保存されていません"); return; }
+            this.loadDefaults();
+            window.uiHelper && uiHelper.showToast("初期値を読み込みました");
+        } catch(e) { console.warn("applyDefaults failed:", e); }
     },
 
     // ---- 初期値をLocalStorageから読み込む ----
