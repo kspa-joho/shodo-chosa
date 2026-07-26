@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.61)</title>
+    <title>被災状況調査アプリ (Phase 5.62)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -502,8 +502,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.61)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.61 (4:3強制クロップ・初期値LocalStorage保存)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.62)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.62 (SW自動更新通知・skip-waiting)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -626,7 +626,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.61</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.62</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -3550,43 +3550,38 @@ document.addEventListener('click', (e) => {
 // GPS管理 (gpsManager)
 // =============================================================================
 // 設計方針：
-//   ・DOMContentLoaded で start() を呼び、タブを開く前からGPSを取り始める。
-//   ・状態は none / good / low の3つ。
-//   ・none状態はボタンを点滅させ取得中を表現。エラー時はグレー固定。
-//   ・撮影ボタンには「誤差○m」を表示（良好/精度低の区別はm数でわかる）。
-//   ・「現在のGPS」行は廃止。誤差はボタンに表示する。
+//   ・写真タブを開いたタイミングで watchPosition() を起動する。
+//   ・精度30m以内を「良好」、超えたら「精度低」、取得不可は「未取得」の3状態で管理。
+//   ・ステータスに応じて撮影ボタンの表示を切り替える。
+//   ・記録ボタンで現在の lat/lng/gpsAccuracy を現在の写真に付与する。
+//   ・0と未記録(null)は別物として扱う。
 // =============================================================================
 window.gpsManager = {
     lat: null,
     lng: null,
-    accuracy: null,    // 取得時の精度（メートル）
-    status: 'none',    // 'none' | 'good' | 'low'
+    accuracy: null,       // 取得時の精度（メートル）。null=未取得
+    status: 'init',       // 'init' | 'good' | 'low' | 'unavailable'
     _watchId: null,
     isStarted: false,
-    _blinkTimer: null,
-    _blinkState: false,
 
     start() {
         if (this.isStarted) return;
         if (!navigator.geolocation) {
-            this.status = 'none';
+            this.status = 'unavailable';
             this._updateUI();
             return;
         }
         this.isStarted = true;
-        this._startBlink();
         this._watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 this.lat      = pos.coords.latitude;
                 this.lng      = pos.coords.longitude;
                 this.accuracy = Math.round(pos.coords.accuracy);
                 this.status   = this.accuracy <= 30 ? 'good' : 'low';
-                this._stopBlink();
                 this._updateUI();
             },
             (err) => {
-                this.status = 'none';
-                this._stopBlink();
+                this.status = 'unavailable';
                 this._updateUI();
                 console.warn("GPS error:", err);
             },
@@ -3594,38 +3589,42 @@ window.gpsManager = {
         );
     },
 
-    _startBlink() {
-        if (this._blinkTimer) return;
-        this._blinkTimer = setInterval(() => {
-            const btn = document.getElementById('photo-camera-btn');
-            if (!btn) return;
-            this._blinkState = !this._blinkState;
-            btn.style.background = this._blinkState ? '#95a5a6' : '#bdc3c7';
-            btn.textContent = '📷 撮影（GPS未取得）';
-        }, 600);
-    },
-
-    _stopBlink() {
-        if (this._blinkTimer) { clearInterval(this._blinkTimer); this._blinkTimer = null; }
-    },
-
-    // 撮影ボタンを更新する（誤差○mを表示）
+    // 撮影ボタンのラベルを GPS 状態に合わせて更新する
     _updateUI() {
         const btn = document.getElementById('photo-camera-btn');
         if (!btn) return;
-        if (this.status === 'good' || this.status === 'low') {
-            btn.textContent      = `📷 撮影（誤差 ${this.accuracy}m）`;
-            btn.style.background = this.status === 'good' ? '#27ae60' : '#e67e22';
-        } else {
-            btn.textContent      = '📷 撮影（GPS未取得）';
-            btn.style.background = '#95a5a6';
-        }
+        const labels = {
+            init:        '📷 撮影（GPS準備中）',
+            good:        '📷 撮影（GPS良好）',
+            low:         '📷 撮影（GPS精度低）',
+            unavailable: '📷 撮影（GPS未取得）'
+        };
+        const colors = {
+            init:        '#2c3e50',
+            good:        '#27ae60',
+            low:         '#e67e22',
+            unavailable: '#95a5a6'
+        };
+        btn.textContent = labels[this.status] || labels.init;
+        btn.style.background = colors[this.status] || colors.init;
+
+        // GPS ステータス表示も更新
+        const el = document.getElementById('gps-live');
+        if (!el) return;
+        const texts = {
+            init:        '準備中...',
+            good:        `受信中 (誤差 ${this.accuracy}m)　${this.lat.toFixed(6)}, ${this.lng.toFixed(6)}`,
+            low:         `精度低 (誤差 ${this.accuracy}m)　${this.lat.toFixed(6)}, ${this.lng.toFixed(6)}`,
+            unavailable: '取得不可'
+        };
+        const tColors = { init: '#aaa', good: '#27ae60', low: '#e67e22', unavailable: '#e74c3c' };
+        el.textContent = texts[this.status] || texts.init;
+        el.style.color  = tColors[this.status] || tColors.init;
     },
 
-    // EXIFから読んだ写真のgpsAccuracyはnullにする（精度不明）
-    // 撮影時自動記録で使うヘルパー
+    // 撮影時に写真へ記録するGPSデータを返す（未取得はnull）
     getCurrentForPhoto() {
-        if (this.status === 'none' || this.lat === null) return null;
+        if (this.status === 'init' || this.status === 'unavailable' || this.lat === null) return null;
         return { lat: this.lat, lng: this.lng, gpsAccuracy: this.accuracy };
     }
 };
@@ -3633,15 +3632,18 @@ window.gpsManager = {
 // =============================================================================
 // 方位センサー管理 (azimuthManager)
 // =============================================================================
+// 設計方針：
+//   ・写真タブを開いたタイミングで起動する（iOSはユーザー操作起点が必須）。
+//   ・センサーが動いている間はリアルタイムで #azimuth-live に常時表示する。
+//   ・写真への方位記録は「記録」ボタンで明示的に行う（備考と同じ操作感）。
+//   ・0（真北）と null（未記録）は別物として扱う。
+// =============================================================================
 window.azimuthManager = {
     currentAzimuth: null,
     isListening: false,
 
     async startListening() {
-        if (this.isListening) {
-            this._updateLiveUI();
-            return true;
-        }
+        if (this.isListening) return true;
         if (
             typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function'
@@ -3693,59 +3695,48 @@ window.azimuthManager = {
 // 写真管理 (photoApp)
 // =============================================================================
 // photos[] の各要素：{ dataUrl, memo, tag, azimuth, lat, lng, gpsAccuracy }
-//   azimuth    : null=未記録 / 整数(度)。0は真北で有効値。
-//   lat/lng    : null=未取得 / 数値
-//   gpsAccuracy: null=精度不明（EXIFから読んだ場合も含む）/ 数値(m)=精度あり
-//
-// 位置情報の表示状態：
-//   ○m   → gpsAccuracyが数値（撮影時自動記録 or GPS修正）
-//   不明  → lat/lngはあるがgpsAccuracyがnull（EXIFから読んだ場合）
-//   未取得 → lat/lngがnull
+//   azimuth    : null=未記録 / 整数(度) ※0は真北で有効値
+//   lat/lng    : null=未記録 / 数値
+//   gpsAccuracy: null=未記録 / 数値(m) ※記録ボタンを押した時点の精度
 // =============================================================================
 window.photoApp = {
     photos: [],
     currentIndex: -1,
 
-    // ---- ファイル受け取り（カメラ専用input） ----
-    // カメラ撮影時はGPSを自動記録する
+    // ---- カメラ撮影からのファイル受け取り（GPS自動記録） ----
     async handleCameraFile(input) {
         const targetW = this._getResizeWidth();
-        const gps = gpsManager.getCurrentForPhoto(); // 撮影時のGPS取得
+        const force43 = this._getForce43();
+        const gps = gpsManager.getCurrentForPhoto();
         for (const file of Array.from(input.files)) {
-            const d = await this.resizeImage(file, targetW);
+            const d = await this.resizeImage(file, targetW, force43);
             this.photos.push({
                 dataUrl: d, memo: "", tag: "補足",
                 azimuth: null,
                 lat:         gps ? gps.lat         : null,
                 lng:         gps ? gps.lng         : null,
-                gpsAccuracy: gps ? gps.gpsAccuracy : null
+                gpsAccuracy: gps ? gps.gpsAccuracy : null,
+                gpsFixed: false
             });
         }
         this.currentIndex = this.photos.length - 1;
-        this.runSort();
-        this.render();
-        this.updateHeaderSummary();
+        this.runSort(); this.render(); this.updateHeaderSummary();
         input.value = "";
     },
 
-    // ---- ファイル受け取り（ファイル選択input） ----
-    // ファイル選択時はEXIFからGPSを読む
+    // ---- ファイル選択からのファイル受け取り（EXIFからGPS読み込み） ----
     async handleFileSelect(input) {
         const targetW = this._getResizeWidth();
+        const force43 = this._getForce43();
         for (const file of Array.from(input.files)) {
-            const { dataUrl, lat, lng } = await this.resizeAndReadExif(file, targetW);
+            const { dataUrl, lat, lng } = await this.resizeAndReadExif(file, targetW, force43);
             this.photos.push({
-                dataUrl: dataUrl, memo: "", tag: "補足",
-                azimuth: null,
-                lat:         lat,
-                lng:         lng,
-                gpsAccuracy: null  // EXIFから読んだ場合は精度不明
+                dataUrl, memo: "", tag: "補足",
+                azimuth: null, lat, lng, gpsAccuracy: null, gpsFixed: false
             });
         }
         this.currentIndex = this.photos.length - 1;
-        this.runSort();
-        this.render();
-        this.updateHeaderSummary();
+        this.runSort(); this.render(); this.updateHeaderSummary();
         input.value = "";
     },
 
@@ -3755,8 +3746,18 @@ window.photoApp = {
         return parseInt(sel.value) || 0;
     },
 
-    // ---- 画像リサイズ（長辺基準・縦横比維持） ----
-    resizeImage(f, targetW) {
+    // 4:3強制チェックの状態を取得
+    _getForce43() {
+        const cb = document.getElementById('photo-force-43');
+        return cb ? cb.checked : false;
+    },
+
+    // ---- 画像リサイズ＋4:3強制クロップ ----
+    // 処理順序：
+    //   1. force43=trueなら縦を基準に左寄せで右側をカット（4:3にトリミング）
+    //   2. 指定横幅にリサイズ（targetWは4:3後の横幅が基準）
+    // targetW=0 の場合はリサイズなし
+    resizeImage(f, targetW, force43) {
         return new Promise((res) => {
             const r = new FileReader();
             r.readAsDataURL(f);
@@ -3764,15 +3765,28 @@ window.photoApp = {
                 const i = new Image();
                 i.src = e.target.result;
                 i.onload = () => {
-                    if (!targetW || (i.width <= targetW && i.height <= targetW)) {
-                        res(e.target.result); return;
+                    let sw = i.width;   // 切り出し幅
+                    let sh = i.height;  // 切り出し高さ
+                    // 4:3クロップ：縦を基準に横を縦×4/3に（右側カット）
+                    if (force43) {
+                        const w43 = Math.floor(sh * 4 / 3);
+                        if (w43 < sw) {
+                            sw = w43; // 横長画像：右側をカット
+                        } else {
+                            sh = Math.floor(sw * 3 / 4); // 縦長画像：下側をカット
+                        }
+                    }
+                    // クロップもリサイズもなし → 元データをそのまま返す
+                    if (!force43 && !targetW) { res(e.target.result); return; }
+                    // リサイズ幅を決定（4:3後の横幅が基準）
+                    let dw = sw, dh = sh;
+                    if (targetW && dw > targetW) {
+                        dh = Math.round(sh * targetW / sw);
+                        dw = targetW;
                     }
                     const c = document.createElement('canvas');
-                    let w = i.width, h = i.height;
-                    if (w >= h) { h = Math.round(h * targetW / w); w = targetW; }
-                    else        { w = Math.round(w * targetW / h); h = targetW; }
-                    c.width = w; c.height = h;
-                    c.getContext('2d').drawImage(i, 0, 0, w, h);
+                    c.width = dw; c.height = dh;
+                    c.getContext('2d').drawImage(i, 0, 0, sw, sh, 0, 0, dw, dh);
                     res(c.toDataURL('image/jpeg', 0.8));
                 };
             };
@@ -3780,50 +3794,45 @@ window.photoApp = {
     },
 
     // ---- リサイズ＋EXIFからGPS読み込み ----
-    resizeAndReadExif(f, targetW) {
+    resizeAndReadExif(f, targetW, force43) {
         return new Promise((res) => {
             const r = new FileReader();
             r.readAsDataURL(f);
             r.onload = (e) => {
                 const originalDataUrl = e.target.result;
-                // EXIFからGPS読み込み（piexifjsを使用）
                 let lat = null, lng = null;
                 try {
                     if (typeof piexif !== 'undefined') {
                         const exif = piexif.load(originalDataUrl);
                         const gps  = exif['GPS'];
                         if (gps && gps[piexif.GPSIFD.GPSLatitude]) {
-                            const latDMS  = gps[piexif.GPSIFD.GPSLatitude];
-                            const latRef  = gps[piexif.GPSIFD.GPSLatitudeRef];
-                            const lngDMS  = gps[piexif.GPSIFD.GPSLongitude];
-                            const lngRef  = gps[piexif.GPSIFD.GPSLongitudeRef];
                             const toDec = (dms) => dms[0][0]/dms[0][1] + dms[1][0]/dms[1][1]/60 + dms[2][0]/dms[2][1]/3600;
-                            lat = toDec(latDMS) * (latRef === 'S' ? -1 : 1);
-                            lng = toDec(lngDMS) * (lngRef === 'W' ? -1 : 1);
+                            lat = toDec(gps[piexif.GPSIFD.GPSLatitude])  * (gps[piexif.GPSIFD.GPSLatitudeRef]  === 'S' ? -1 : 1);
+                            lng = toDec(gps[piexif.GPSIFD.GPSLongitude]) * (gps[piexif.GPSIFD.GPSLongitudeRef] === 'W' ? -1 : 1);
                         }
                     }
                 } catch(e) { /* EXIFなしは無視 */ }
-
-                // リサイズ
                 const i = new Image();
                 i.src = originalDataUrl;
                 i.onload = () => {
-                    if (!targetW || (i.width <= targetW && i.height <= targetW)) {
-                        res({ dataUrl: originalDataUrl, lat, lng }); return;
+                    let sw = i.width, sh = i.height;
+                    if (force43) {
+                        const w43 = Math.floor(sh * 4 / 3);
+                        if (w43 < sw) sw = w43; else sh = Math.floor(sw * 3 / 4);
                     }
+                    if (!force43 && !targetW) { res({ dataUrl: originalDataUrl, lat, lng }); return; }
+                    let dw = sw, dh = sh;
+                    if (targetW && dw > targetW) { dh = Math.round(sh * targetW / sw); dw = targetW; }
                     const c = document.createElement('canvas');
-                    let w = i.width, h = i.height;
-                    if (w >= h) { h = Math.round(h * targetW / w); w = targetW; }
-                    else        { w = Math.round(w * targetW / h); h = targetW; }
-                    c.width = w; c.height = h;
-                    c.getContext('2d').drawImage(i, 0, 0, w, h);
+                    c.width = dw; c.height = dh;
+                    c.getContext('2d').drawImage(i, 0, 0, sw, sh, 0, 0, dw, dh);
                     res({ dataUrl: c.toDataURL('image/jpeg', 0.8), lat, lng });
                 };
             };
         });
     },
 
-    // ---- 撮影方向（方位）を現在の写真に記録 ----
+    // ---- 方位を現在の写真に記録 ----
     recordAzimuth() {
         if (this.currentIndex === -1) {
             window.uiHelper && uiHelper.showToast("写真を選択してから記録してください"); return;
@@ -3834,14 +3843,14 @@ window.photoApp = {
         const az = azimuthManager.currentAzimuth;
         this.photos[this.currentIndex].azimuth = az;
         this.renderAzimuthField();
-        window.uiHelper && uiHelper.showToast(`撮影方向を記録しました: ${az}° ${azimuthManager._dir(az)}`);
+        window.uiHelper && uiHelper.showToast(`方位を記録しました: ${az}° ${azimuthManager._dir(az)}`);
     },
 
     clearAzimuth() {
         if (this.currentIndex === -1) return;
         this.photos[this.currentIndex].azimuth = null;
         this.renderAzimuthField();
-        window.uiHelper && uiHelper.showToast("撮影方向を削除しました");
+        window.uiHelper && uiHelper.showToast("方位を削除しました");
     },
 
     updateAzimuth(v) {
@@ -3867,27 +3876,44 @@ window.photoApp = {
         }
     },
 
-    // ---- 位置情報の表示を更新 ----
-    // ○m / 修正済み（座標）/ 不明 / 未取得 の4状態
+    // ---- GPSを現在の写真に記録 ----
+    recordGps() {
+        if (this.currentIndex === -1) {
+            window.uiHelper && uiHelper.showToast("写真を選択してから記録してください"); return;
+        }
+        if (gpsManager.status === 'init' || gpsManager.lat === null) {
+            window.uiHelper && uiHelper.showToast("GPS取得中です。少し待ってから再度押してください"); return;
+        }
+        const p = this.photos[this.currentIndex];
+        p.lat         = gpsManager.lat;
+        p.lng         = gpsManager.lng;
+        p.gpsAccuracy = gpsManager.accuracy;
+        this.renderGpsField();
+        const accMsg = gpsManager.accuracy !== null ? `（誤差 ${gpsManager.accuracy}m）` : '';
+        window.uiHelper && uiHelper.showToast(`GPS を記録しました ${accMsg}`);
+    },
+
+    clearGps() {
+        if (this.currentIndex === -1) return;
+        this.photos[this.currentIndex].lat         = null;
+        this.photos[this.currentIndex].lng         = null;
+        this.photos[this.currentIndex].gpsAccuracy = null;
+        this.renderGpsField();
+        window.uiHelper && uiHelper.showToast("GPS を削除しました");
+    },
+
+    // GPS記録欄を現在の写真に合わせて更新
     renderGpsField() {
-        const el = document.getElementById('photo-gps-status');
+        const el = document.getElementById('photo-gps-recorded');
         if (!el) return;
         const p = this.photos[this.currentIndex];
         if (!p || p.lat === null) {
-            el.textContent = '未取得';
+            el.textContent = '未記録';
             el.style.color = '#aaa';
-        } else if (p.gpsAccuracy !== null) {
-            // 撮影時自動記録（精度あり）
-            el.textContent = `${p.gpsAccuracy}m`;
-            el.style.color = p.gpsAccuracy <= 30 ? '#27ae60' : '#e67e22';
-        } else if (p.gpsFixed) {
-            // 地図タップ修正済み（緯度経度を小さく表示）
-            el.textContent = `修正済み（${p.lat.toFixed(4)}°, ${p.lng.toFixed(4)}°）`;
-            el.style.color = '#3498db';
         } else {
-            // EXIFから読んだ場合（精度不明）
-            el.textContent = '不明';
-            el.style.color = '#e67e22';
+            const accStr = p.gpsAccuracy !== null ? `　誤差 ${p.gpsAccuracy}m` : '';
+            el.textContent = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}${accStr}`;
+            el.style.color = p.gpsAccuracy !== null && p.gpsAccuracy <= 30 ? '#27ae60' : '#e67e22';
         }
     },
 
@@ -3973,92 +3999,7 @@ window.photoApp = {
         this.updateHeaderSummary();
     },
 
-    // キャンセル時に写真タブを復元する
-    _restorePhotoTab() {
-        const photoItem = document.querySelector('.accordion-item[data-group="photo-area"]');
-        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
-        const photoIcon    = photoItem ? photoItem.querySelector('.icon') : null;
-        if (photoContent) photoContent.style.display = 'block';
-        if (photoIcon)    photoIcon.textContent = '-';
-
-        const mapItem    = document.querySelector('.accordion-item[data-group="map-area"]');
-        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
-        const mapIcon    = mapItem ? mapItem.querySelector('.icon') : null;
-        if (mapContent) mapContent.style.display = 'none';
-        if (mapIcon)    mapIcon.textContent = '+';
-
-        if (photoItem) photoItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    },
-
     updateMemo(v) { if (this.currentIndex !== -1) this.photos[this.currentIndex].memo = v; },
-
-    // 位置情報を地図タップで修正
-    // ① 写真タブを閉じる → 位置図タブを開く → GPS修正モード開始
-    modifyGps() {
-        if (this.currentIndex === -1) {
-            window.uiHelper && uiHelper.showToast("写真を選択してから修正してください"); return;
-        }
-        const photoIndex = this.currentIndex;
-
-        // 写真タブを閉じる
-        const photoItem = document.querySelector('.accordion-item[data-group="photo-area"]');
-        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
-        const photoIcon = photoItem ? photoItem.querySelector('.icon') : null;
-        if (photoContent) photoContent.style.display = 'none';
-        if (photoIcon) photoIcon.textContent = '+';
-
-        // 位置図タブを開く
-        const mapItem = document.querySelector('.accordion-item[data-group="map-area"]');
-        const mapHeader = mapItem ? mapItem.querySelector('.accordion-header') : null;
-        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
-        const mapIcon = mapItem ? mapItem.querySelector('.icon') : null;
-        if (mapContent) mapContent.style.display = 'block';
-        if (mapIcon) mapIcon.textContent = '-';
-
-        // 地図を初期化してスクロール
-        window.mapApp.init();
-        if (mapItem) mapItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        // GPS修正モード開始
-        setTimeout(() => {
-            window.mapApp.startGpsFixMode(photoIndex);
-        }, 400);
-    },
-
-    // 地図タップで確定した座標を写真に適用
-    // gpsAccuracy=null（精度不明）、gpsFixed=true（地図タップ修正済み）として記録する
-    applyGpsFix(lat, lng) {
-        const photoIndex = window.mapApp._gpsFixPhotoIndex;
-        if (photoIndex === null || photoIndex >= this.photos.length) return;
-
-        this.photos[photoIndex].lat         = lat;
-        this.photos[photoIndex].lng         = lng;
-        this.photos[photoIndex].gpsAccuracy = null;   // 精度不明
-        this.photos[photoIndex].gpsFixed    = true;   // 地図タップ修正済みフラグ
-
-        // 写真タブを開いて元の写真に戻る
-        const photoItem    = document.querySelector('.accordion-item[data-group="photo-area"]');
-        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
-        const photoIcon    = photoItem ? photoItem.querySelector('.icon') : null;
-        if (photoContent) photoContent.style.display = 'block';
-        if (photoIcon)    photoIcon.textContent = '-';
-
-        // 位置図タブを閉じる
-        const mapItem    = document.querySelector('.accordion-item[data-group="map-area"]');
-        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
-        const mapIcon    = mapItem ? mapItem.querySelector('.icon') : null;
-        if (mapContent) mapContent.style.display = 'none';
-        if (mapIcon)    mapIcon.textContent = '+';
-
-        // 写真を元のインデックスに戻して表示更新
-        this.currentIndex = photoIndex;
-        this.render();
-
-        // 写真タブにスクロール
-        if (photoItem) photoItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        window.uiHelper && uiHelper.showToast("位置情報を修正しました");
-    },
 
     updateHeaderSummary() {
         const s = document.querySelector('.accordion-item[data-group="photo-area"] .summary-text');
@@ -4069,6 +4010,23 @@ window.photoApp = {
         }
     }
 };
+
+// =============================================================================
+// 写真アコーディオンを開いたときに GPS・センサーを起動するフック
+// =============================================================================
+document.addEventListener('click', (e) => {
+    const header = e.target.closest('.accordion-header');
+    if (!header) return;
+    const item = header.parentElement;
+    if (!item || item.dataset.group !== 'photo-area') return;
+    const content = header.nextElementSibling;
+    if (content && content.style.display !== 'block') {
+        // GPS は許可不要（watchPosition は自動でダイアログを出す）
+        gpsManager.start();
+        // 方位センサーはユーザー操作起点で許可ダイアログを出す（iOS対応）
+        azimuthManager.startListening();
+    }
+});
 
 
 // --- UIヘルパー ---
@@ -4248,8 +4206,7 @@ window.storageManager = {
                     azimuth:     p.azimuth     ?? null,
                     lat:         p.lat         ?? null,
                     lng:         p.lng         ?? null,
-                    gpsAccuracy: p.gpsAccuracy ?? null,
-                    gpsFixed:    p.gpsFixed    ?? false
+                    gpsAccuracy: p.gpsAccuracy ?? null
                     // dataUrlは保存しない
                 }));
                 localStorage.setItem(this.KEY, JSON.stringify(data));
@@ -4265,12 +4222,32 @@ window.storageManager = {
                 const el = document.querySelector(`[name="${k}"]`);
                 if (el) el.value = json[k];
             });
-            // 【修正②】地図復元データを一時保持しておき、
-            // アコーディオンを開いたときに正しいDOMサイズで初期化・復元する。
-            // ページ読み込み時点では#mapのDOMサイズが0なので、ここではmapApp.init()を呼ばない。
-            if (window.mapApp && json.mainGeom) {
-                mapApp._pendingMainGeom = json.mainGeom;
-                mapApp._pendingSubGeom  = json.subGeom;
+            // 【修正②】地図復元は mapApp.init() 後に mapApp.map が確実に存在する場合のみ実行。
+            // アコーディオンが閉じていると地図DOMが非表示でinitが不完全になるケースがあるため、
+            // map が null でも後続処理をクラッシュさせないよう安全に処理する。
+            if (window.mapApp) {
+                mapApp.init();
+                if (mapApp.map && mapApp.allDrawnItems) {
+                    mapApp.allDrawnItems.clearLayers();
+                    const restoreGeom = (geom, isM) => {
+                        if (!geom) return;
+                        L.geoJSON(geom, {
+                            pointToLayer: (feature, latlng) => (isM && !feature.properties.isText) ? L.circle(latlng, { radius: 10, color: '#ff0000', weight: 6, fillOpacity: 0 }) : L.marker(latlng)
+                        }).eachLayer(l => {
+                            if(!l.options) l.options = {}; l.options.isMain = isM;
+                            if (l.feature.properties && l.feature.properties.isText) {
+                                mapApp.allDrawnItems.addLayer(mapApp.createTextLayer(l.getLatLng(), l.feature.properties.textVal));
+                            } else {
+                                if (l.setStyle && !(l instanceof L.Circle)) l.setStyle({ color: isM ? '#ff0000' : '#0000ff', weight: 6, opacity: 0.7 });
+                                if (isM && l instanceof L.Marker) { l.options.icon = new L.Icon.Default(); l.on('add', () => { if(l._icon) l._icon.classList.add('marker-red'); }); }
+                                mapApp.allDrawnItems.addLayer(l);
+                            }
+                        });
+                    };
+                    restoreGeom(json.mainGeom, true);
+                    restoreGeom(json.subGeom, false);
+                    mapApp.updateMapSummary();
+                }
             }
             // 【修正①続き】dataUrlなしで保存されているため、写真は枚数・タグ・メモのみ復元。
             // 画像表示はできないが、「写真X枚（要JZIP再読込）」として件数は保持される。
@@ -4282,8 +4259,7 @@ window.storageManager = {
                     azimuth:     p.azimuth     ?? null,
                     lat:         p.lat         ?? null,
                     lng:         p.lng         ?? null,
-                    gpsAccuracy: p.gpsAccuracy ?? null,
-                    gpsFixed:    p.gpsFixed    ?? false
+                    gpsAccuracy: p.gpsAccuracy ?? null
                 }));
                 window.photoApp.currentIndex = 0;
                 window.photoApp.render();
@@ -4335,8 +4311,7 @@ window.appControl = {
                 azimuth:     p.azimuth     ?? null,
                 lat:         p.lat         ?? null,
                 lng:         p.lng         ?? null,
-                gpsAccuracy: p.gpsAccuracy ?? null,
-                gpsFixed:    p.gpsFixed    ?? false
+                gpsAccuracy: p.gpsAccuracy ?? null
             };
         });
 
@@ -4443,8 +4418,7 @@ window.appControl = {
                     azimuth:     p.azimuth     ?? null,
                     lat:         p.lat         ?? null,
                     lng:         p.lng         ?? null,
-                    gpsAccuracy: p.gpsAccuracy ?? null,
-                    gpsFixed:    p.gpsFixed    ?? false
+                    gpsAccuracy: p.gpsAccuracy ?? null
                 });
             }
             photoApp.currentIndex = 0; photoApp.render(); photoApp.updateHeaderSummary(); 
@@ -4531,16 +4505,67 @@ window.appControl = {
                 if (btn) btn.disabled = false;
             });
     },
-    exportCurrentApp() {
-        document.querySelectorAll('input, select, textarea').forEach(el => {
-            if (el.tagName === 'TEXTAREA') el.innerText = el.value;
-            else if (el.tagName === 'SELECT') Array.from(el.options).forEach(o => o.selected ? o.setAttribute('selected','selected') : o.removeAttribute('selected'));
-            else if (el.type !== 'file') el.setAttribute('value', el.value);
+    // ---- 初期値をLocalStorageに保存 ----
+    // 保存内容：会社情報・出力ファイル名構成・写真設定
+    // 起動時に自動で読み込まれる（DOMContentLoaded内でloadDefaults()を呼ぶ）
+    saveDefaults() {
+        const DEFAULTS_KEY = 'survey_app_defaults';
+        const d = {};
+        // 会社情報・調査者情報
+        ['company_id','leader_name','company_name','tel','fax','person_name','email'].forEach(k => {
+            const el = document.querySelector(`[name="${k}"]`);
+            if (el) d[k] = el.value;
         });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([`<!DOCTYPE html>\n` + document.documentElement.outerHTML], {type: 'text/html'}));
-        a.download = "configured_app.html";
-        a.click();
+        // 出力ファイル名構成
+        ['fn1','fn2','fn3','fn4','fn5'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) d[id] = el.value;
+        });
+        // 写真設定
+        const resizeSel = document.getElementById('photo-resize-width');
+        if (resizeSel) d.photo_resize_width = resizeSel.value;
+        const force43cb = document.getElementById('photo-force-43');
+        if (force43cb) d.photo_force_43 = force43cb.checked;
+
+        try {
+            localStorage.setItem(DEFAULTS_KEY, JSON.stringify(d));
+            window.uiHelper && uiHelper.showToast("初期値を保存しました");
+        } catch(e) {
+            alert("保存に失敗しました: " + e.message);
+        }
+    },
+
+    // ---- 初期値をLocalStorageから読み込む ----
+    loadDefaults() {
+        const DEFAULTS_KEY = 'survey_app_defaults';
+        try {
+            const jsonStr = localStorage.getItem(DEFAULTS_KEY);
+            if (!jsonStr) return;
+            const d = JSON.parse(jsonStr);
+            // 会社情報・調査者情報
+            ['company_id','leader_name','company_name','tel','fax','person_name','email'].forEach(k => {
+                if (d[k] !== undefined) {
+                    const el = document.querySelector(`[name="${k}"]`);
+                    if (el) { el.value = d[k]; el.dispatchEvent(new Event('input')); }
+                }
+            });
+            // 出力ファイル名構成
+            ['fn1','fn2','fn3','fn4','fn5'].forEach(id => {
+                if (d[id] !== undefined) {
+                    const el = document.getElementById(id);
+                    if (el) el.value = d[id];
+                }
+            });
+            // 写真設定
+            if (d.photo_resize_width !== undefined) {
+                const el = document.getElementById('photo-resize-width');
+                if (el) el.value = d.photo_resize_width;
+            }
+            if (d.photo_force_43 !== undefined) {
+                const el = document.getElementById('photo-force-43');
+                if (el) el.checked = d.photo_force_43;
+            }
+        } catch(e) { console.warn("loadDefaults failed:", e); }
     },
     getFn() {
         // 【修正③続き】getFormData()ではなく直接フォーム値を取得することで、
@@ -4561,9 +4586,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(registration => {
-                console.log('SW registered: ', registration);
-            }).catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
+                console.log('SW registered:', registration);
+
+                // 新しいSWが「waiting」状態になったら通知する
+                const notifyUpdate = (worker) => {
+                    if (confirm('🔔 新しいバージョンのアプリがあります。\n今すぐ更新しますか？')) {
+                        // SWに「今すぐ制御を奪って」と指示
+                        worker.postMessage({ action: 'skip-waiting' });
+                    }
+                };
+
+                // すでにwaitingしているSWがある場合（ページリロード直後など）
+                if (registration.waiting) {
+                    notifyUpdate(registration.waiting);
+                }
+
+                // インストール中のSWがwaitingになったとき
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (!newWorker) return;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            notifyUpdate(newWorker);
+                        }
+                    });
+                });
+
+            }).catch(err => {
+                console.log('SW registration failed:', err);
+            });
+
+            // SWが制御を奪ったらページをリロード（最新版を表示）
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         });
     }
@@ -4586,41 +4641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const activeBtn = document.querySelector('.map-mode-selector .sketch-btn.active');
                 const mode = activeBtn ? activeBtn.id.replace('mode-btn-', '') : 'map';
                 uiHelper.switchMapMode(mode);
-                // DOMが表示された後にサイズを再計算して地図を正常描画する
-                setTimeout(() => {
-                    if (!window.mapApp.map) return;
-                    window.mapApp.map.invalidateSize();
-                    // オートセーブから復元したペンディングデータがあれば描画する
-                    if (mapApp._pendingMainGeom || mapApp._pendingSubGeom) {
-                        mapApp.allDrawnItems.clearLayers();
-                        const restoreGeom = (geom, isM) => {
-                            if (!geom) return;
-                            L.geoJSON(geom, {
-                                pointToLayer: (feature, latlng) => (isM && !feature.properties.isText) ? L.circle(latlng, { radius: 10, color: '#ff0000', weight: 6, fillOpacity: 0 }) : L.marker(latlng)
-                            }).eachLayer(l => {
-                                if (!l.options) l.options = {}; l.options.isMain = isM;
-                                if (l.feature.properties && l.feature.properties.isText) {
-                                    mapApp.allDrawnItems.addLayer(mapApp.createTextLayer(l.getLatLng(), l.feature.properties.textVal));
-                                } else {
-                                    if (l.setStyle && !(l instanceof L.Circle)) l.setStyle({ color: isM ? '#ff0000' : '#0000ff', weight: 6, opacity: 0.7 });
-                                    if (isM && l instanceof L.Marker) { l.options.icon = new L.Icon.Default(); l.on('add', () => { if (l._icon) l._icon.classList.add('marker-red'); }); }
-                                    mapApp.allDrawnItems.addLayer(l);
-                                }
-                            });
-                        };
-                        restoreGeom(mapApp._pendingMainGeom, true);
-                        restoreGeom(mapApp._pendingSubGeom, false);
-                        mapApp.updateMapSummary();
-                        // 復元済みなのでペンディングをクリア
-                        mapApp._pendingMainGeom = null;
-                        mapApp._pendingSubGeom  = null;
-                    }
-                }, 350);
-            }
-            // 写真タブを開いたとき方位センサーを起動（ユーザー操作起点なのでiOS許可ダイアログが出る）
-            if (h.parentElement.dataset.group === 'photo-area') {
-                window.azimuthManager.startListening();
-            }
+            } 
         }
     }));
     const updateS = (item) => {
@@ -4645,8 +4666,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.storageManager.load();
     document.querySelectorAll('.accordion-item').forEach(item => updateS(item));
     uiHelper.switchMapMode('map');
-    // GPS はアプリ起動時から取り始める（タブを開く前から動作させるため）
+    // GPS はアプリ起動時から取り始める
     window.gpsManager.start();
+    // 初期値をLocalStorageから読み込む（会社情報・ファイル名構成・写真設定）
+    window.appControl.loadDefaults();
 });
 
     </script>
