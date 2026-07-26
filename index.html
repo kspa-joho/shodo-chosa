@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.60)</title>
+    <title>被災状況調査アプリ (Phase 5.61)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -416,13 +416,11 @@ canvas.sketch-canvas { display: block; width: 100%; }
                 </div>
             </div>
 
-            <!-- 【新規追加】写真の出力横幅指定 -->
-            <!-- リサイズは JZIP エクスポート時・カメラ/ファイル読込時の両方に適用される。
-                 元コードの resizeImage() は 1200px 固定だったが、ここで指定した値を使うよう変更する。
-                 「なし」を選ぶと元サイズのまま出力（ただし容量が大きくなる）。 -->
+
+            <!-- 写真設定（横幅・4:3強制） -->
             <div style="background:#eee; padding:10px; margin-bottom:10px; border-radius:4px;">
                 <label style="font-size:0.7rem; color:#666;">写真の出力横幅（長辺）</label>
-                <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-top:5px; margin-bottom:8px;">
                     <select id="photo-resize-width" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">
                         <option value="800">800px（小・軽量）</option>
                         <option value="1200" selected>1200px（標準）</option>
@@ -432,6 +430,11 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     </select>
                     <span style="font-size:0.75rem; color:#888;">で保存</span>
                 </div>
+                <!-- 4:3強制クロップ：縦を基準に左寄せで右側をカット。指定横幅は4:3後の横幅。 -->
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#333; cursor:pointer;">
+                    <input type="checkbox" id="photo-force-43" style="width:18px; height:18px;">
+                    強制的に4:3にする（右側をカット）
+                </label>
             </div>
 
             <button type="button" class="btn-main" onclick="appControl.exportZip()">入力データ保存（JZIP形式）</button>
@@ -444,7 +447,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <button type="button" class="btn-sub" style="background:#7f8c8d; margin-bottom:10px;"
                 onclick="mapCacheManager.clearAllCache()">地図キャッシュを開放する</button>
             <hr style="margin: 15px 0;">
-            <button type="button" class="btn-sub" style="background:#e67e22;" onclick="appControl.exportCurrentApp()">この内容を初期値として保存（html）</button>
+            <button type="button" class="btn-sub" style="background:#e67e22;" onclick="appControl.saveDefaults()">初期値として保存</button>
         </div>
     </div>
 </div>
@@ -499,8 +502,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.60)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.60 (モード切替ボタンのアクティブ表示修正)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.61)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.61 (4:3強制クロップ・初期値LocalStorage保存)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -623,7 +626,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.60</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.61</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
