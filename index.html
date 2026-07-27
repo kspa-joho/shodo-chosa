@@ -331,17 +331,15 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <!-- リアルタイムGPS -->
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                         <span style="font-size:0.78rem; color:#666; white-space:nowrap;">📍 現在のGPS：</span>
-                        <span id="gps-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">（タブを開くと起動）</span>
+                        <span id="gps-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">--</span>
                     </div>
 
-                    <!-- この写真のGPS（記録値） -->
+                    <!-- 位置情報（○m / 不明 / 未取得） -->
                     <div style="display:flex; align-items:center; gap:5px;">
-                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:7em;">この写真のGPS：</label>
-                        <span id="photo-gps-recorded" style="flex:1; font-size:0.78rem; color:#aaa;">未記録</span>
+                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:5em;">位置情報：</label>
+                        <span id="photo-gps-status" style="flex:1; font-size:0.82rem; font-weight:bold; color:#aaa;">未取得</span>
                         <button type="button" class="btn-main" style="flex:1; padding:6px; font-size:0.78rem; background:#2c3e50;"
-                            onclick="photoApp.recordGps()">記録</button>
-                        <button type="button" class="btn-sub" style="flex:1; padding:6px; font-size:0.78rem; background:#e74c3c;"
-                            onclick="photoApp.clearGps()">削除</button>
+                            onclick="photoApp.modifyGps()">修正</button>
                     </div>
                 </div>
 
@@ -349,11 +347,9 @@ canvas.sketch-canvas { display: block; width: 100%; }
                      photo-camera-input: capture="environment"・multipleなし → カメラ直起動専用。
                        iOSでmultipleを付けると動作が不安定になるため1枚専用とする。
                      photo-file-input: captureなし・multiple あり → ファイル選択専用（複数枚対応）。
-                     どちらも photoApp.handleFile(this) に渡す。処理は共通。 -->
-                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none"
-                    onchange="photoApp.handleFile(this)">
-                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none"
-                    onchange="photoApp.handleFile(this)">
+                     処理関数がそれぞれ異なる点に注意。 -->
+                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none">
+                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none">
 
                 <div style="display:flex; gap:6px;">
                     <!-- id="photo-camera-btn" を付けることで gpsManager._updateUI() がボタンラベルを動的に書き換える -->
