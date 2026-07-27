@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.66)</title>
+    <title>被災状況調査アプリ (Phase 5.68)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -512,8 +512,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.66)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.66 (DOMContentLoaded二重閉じ括弧バグ修正)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.68)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.68 (方位センサー deviceorientationabsolute優先・真北基準修正)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -635,7 +635,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.66</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.68</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -3758,7 +3758,11 @@ window.azimuthManager = {
     isListening: false,
 
     async startListening() {
-        if (this.isListening) return true;
+        if (this.isListening) {
+            this._updateLiveUI();
+            return true;
+        }
+        // iOS13以降: requestPermission が必要
         if (
             typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function'
@@ -3774,14 +3778,38 @@ window.azimuthManager = {
                 return false;
             }
         }
-        window.addEventListener('deviceorientation', (e) => {
-            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-                this.currentAzimuth = Math.round(e.webkitCompassHeading);
-            } else if (e.alpha !== null && e.alpha !== undefined) {
-                this.currentAzimuth = Math.round((360 - e.alpha + 360) % 360);
-            }
+
+        // 【方位取得の優先順位】
+        // 1. webkitCompassHeading（iOS・真北基準・最高精度）
+        // 2. deviceorientationabsolute（Android等・真北基準）
+        // 3. deviceorientation（フォールバック・相対値のため精度低）
+        let absoluteReceived = false;
+
+        // deviceorientationabsolute を試みる（真北基準・Android Chrome/Samsung Internet対応）
+        window.addEventListener('deviceorientationabsolute', (e) => {
+            if (e.alpha === null || e.alpha === undefined) return;
+            absoluteReceived = true;
+            this.currentAzimuth = Math.round((360 - e.alpha + 360) % 360);
             this._updateLiveUI();
         }, true);
+
+        // deviceorientation も登録（webkitCompassHeading用・absoluteが来ない場合のフォールバック）
+        window.addEventListener('deviceorientation', (e) => {
+            // iOSのwebkitCompassHeadingが使える場合は最優先
+            if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+                this.currentAzimuth = Math.round(e.webkitCompassHeading);
+                this._updateLiveUI();
+                return;
+            }
+            // absoluteイベントが来ていればそちらを優先
+            if (absoluteReceived) return;
+            // フォールバック（精度低・相対値）
+            if (e.alpha !== null && e.alpha !== undefined) {
+                this.currentAzimuth = Math.round((360 - e.alpha + 360) % 360);
+                this._updateLiveUI();
+            }
+        }, true);
+
         this.isListening = true;
         this._setLiveUI('センサー起動中...', '#e67e22');
         return true;
