@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.63)</title>
+    <title>被災状況調査アプリ (Phase 5.65)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -512,8 +512,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.63)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.63 (クリア機能・applyDefaults追加)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.65)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.65 (IndexedDB写真永続化・アプリ落ち対策)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -611,7 +611,6 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <section>
         <h3>5. 重要な決定事項</h3>
         <ul>
-            <li><strong>開発元:</strong> AxA-AIproject</li>
             <li><strong>カメラinput分離方針:</strong> iOSのmultiple不安定問題を根本解決。今後変更しない。</li>
             <li><strong>位置情報の削除ボタン廃止:</strong> 誤操作防止のため削除ボタンは設けない。修正は地図タップ上書きのみ。</li>
             <li><strong>EXIFはエクスポート時に書き込む:</strong> リサイズ時にEXIFが消えるため、JZIP生成時にpiexifjsで書き直す。</li>
@@ -636,7 +635,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.63</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.65</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -3557,6 +3556,112 @@ document.addEventListener('click', (e) => {
 });
 
 // =============================================================================
+// 写真IndexedDB管理 (photoStorage)
+// =============================================================================
+// 設計方針：
+//   ・写真のdataUrlをIndexedDBに保存することで、アプリが落ちても写真が消えない。
+//   ・LocalStorage（5MB上限）では写真を保存できないため、IndexedDBを使う。
+//   ・iOSはPWAとしてインストールすれば7日以上データが保持される。
+//   ・DBキー = インデックス番号（0,1,2...）で管理する。
+//   ・photoApp.photos[]の操作と連動して自動で保存・削除・復元を行う。
+// =============================================================================
+window.photoStorage = {
+    DB_NAME: 'survey_photo_db',
+    STORE:   'photos',
+    _db: null,
+
+    // DBを開く（初回は作成）
+    open() {
+        return new Promise((resolve, reject) => {
+            if (this._db) { resolve(this._db); return; }
+            const req = indexedDB.open(this.DB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+                e.target.result.createObjectStore(this.STORE, { keyPath: 'id' });
+            };
+            req.onsuccess = (e) => { this._db = e.target.result; resolve(this._db); };
+            req.onerror   = (e) => reject(e.target.error);
+        });
+    },
+
+    // 写真を保存（id=インデックス番号）
+    async save(id, dataUrl) {
+        try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(this.STORE, 'readwrite');
+                tx.objectStore(this.STORE).put({ id, dataUrl });
+                tx.oncomplete = resolve;
+                tx.onerror    = reject;
+            });
+        } catch(e) { console.warn("photoStorage.save failed:", e); }
+    },
+
+    // 写真を削除
+    async delete(id) {
+        try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(this.STORE, 'readwrite');
+                tx.objectStore(this.STORE).delete(id);
+                tx.oncomplete = resolve;
+                tx.onerror    = reject;
+            });
+        } catch(e) { console.warn("photoStorage.delete failed:", e); }
+    },
+
+    // 全件取得
+    async getAll() {
+        try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+                const tx  = db.transaction(this.STORE, 'readonly');
+                const req = tx.objectStore(this.STORE).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror   = reject;
+            });
+        } catch(e) { console.warn("photoStorage.getAll failed:", e); return []; }
+    },
+
+    // 全件削除
+    async clearAll() {
+        try {
+            const db = await this.open();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(this.STORE, 'readwrite');
+                tx.objectStore(this.STORE).clear();
+                tx.oncomplete = resolve;
+                tx.onerror    = reject;
+            });
+        } catch(e) { console.warn("photoStorage.clearAll failed:", e); }
+    },
+
+    // photos[]全体をDBに同期する（並び替え後など）
+    async syncAll(photos) {
+        try {
+            await this.clearAll();
+            for (let i = 0; i < photos.length; i++) {
+                await this.save(i, photos[i].dataUrl);
+            }
+        } catch(e) { console.warn("photoStorage.syncAll failed:", e); }
+    },
+
+    // アプリ起動時にDBから写真を復元する
+    async restore() {
+        const records = await this.getAll();
+        if (!records.length) return;
+        // IDでソートして順番を保持
+        records.sort((a, b) => a.id - b.id);
+        records.forEach((rec, i) => {
+            if (window.photoApp.photos[i]) {
+                window.photoApp.photos[i].dataUrl = rec.dataUrl;
+            }
+        });
+        window.photoApp.render();
+        window.photoApp.updateHeaderSummary();
+    }
+};
+
+// =============================================================================
 // GPS管理 (gpsManager)
 // =============================================================================
 // 設計方針：
@@ -3730,7 +3835,10 @@ window.photoApp = {
             });
         }
         this.currentIndex = this.photos.length - 1;
-        this.runSort(); this.render(); this.updateHeaderSummary();
+        this.runSort();
+        // IndexedDBに全写真を同期（runSortで順番が変わるため全件同期）
+        await photoStorage.syncAll(this.photos);
+        this.render(); this.updateHeaderSummary();
         input.value = "";
     },
 
@@ -3746,7 +3854,10 @@ window.photoApp = {
             });
         }
         this.currentIndex = this.photos.length - 1;
-        this.runSort(); this.render(); this.updateHeaderSummary();
+        this.runSort();
+        // IndexedDBに全写真を同期
+        await photoStorage.syncAll(this.photos);
+        this.render(); this.updateHeaderSummary();
         input.value = "";
     },
 
@@ -3950,6 +4061,8 @@ window.photoApp = {
             return (s[a.tag] || 99) - (s[b.tag] || 99);
         });
         if (currentPhoto) this.currentIndex = this.photos.indexOf(currentPhoto);
+        // ソートで順番が変わるのでDBを全件同期
+        photoStorage.syncAll(this.photos);
         this.render();
     },
 
@@ -3965,6 +4078,8 @@ window.photoApp = {
         this.photos[this.currentIndex] = this.photos[targetIndex];
         this.photos[targetIndex] = temp;
         this.currentIndex = targetIndex;
+        // 並び替え後もDBを全件同期
+        photoStorage.syncAll(this.photos);
         this.render();
     },
 
@@ -4005,6 +4120,8 @@ window.photoApp = {
         if (this.currentIndex === -1 || !confirm("この写真を削除しますか？")) return;
         this.photos.splice(this.currentIndex, 1);
         if (this.currentIndex >= this.photos.length) this.currentIndex = this.photos.length - 1;
+        // 削除後もDBを全件同期（インデックスが変わるため全件上書き）
+        photoStorage.syncAll(this.photos);
         this.render();
         this.updateHeaderSummary();
     },
@@ -4560,6 +4677,8 @@ window.appControl = {
             photoApp.render();
             photoApp.updateHeaderSummary();
         }
+        // IndexedDBの写真も削除
+        window.photoStorage && photoStorage.clearAll();
 
         // 地図クリア
         if (window.mapApp && mapApp.allDrawnItems) {
@@ -4738,8 +4857,30 @@ document.addEventListener('DOMContentLoaded', () => {
     uiHelper.switchMapMode('map');
     // GPS はアプリ起動時から取り始める
     window.gpsManager.start();
-    // 初期値をLocalStorageから読み込む（会社情報・ファイル名構成・写真設定）
+    // 初期値をLocalStorageから読み込む
     window.appControl.loadDefaults();
+    // IndexedDBから写真を復元する（アプリが落ちた場合のリカバリー）
+    // オートセーブのメタ情報復元後に呼ぶことで、タグ・備考・GPSが設定済みの状態に画像を復元する
+    window.photoStorage.restore();
+});
+    // iOSのSafariではinputのinline onchangeが capture="environment" と組み合わせると
+    // 発火しないケースがあるため、DOMContentLoaded後にaddEventListenerで登録する。
+    const cameraInput = document.getElementById('photo-camera-input');
+    const fileInput   = document.getElementById('photo-file-input');
+    if (cameraInput) {
+        cameraInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                window.photoApp.handleCameraFile(this);
+            }
+        });
+    }
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                window.photoApp.handleFileSelect(this);
+            }
+        });
+    }
 });
 
     </script>
