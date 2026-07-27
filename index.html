@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.73)</title>
+    <title>被災状況調査アプリ (Phase 5.74)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -294,19 +294,31 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <button type="button" class="btn-sub" style="flex:1; background:#e74c3c;" onclick="photoApp.delete()">削除</button>
                 </div>
 
+                <!-- 【iPhone対応】inputを2つに分離。
+                     photo-camera-input: capture="environment"・multipleなし → カメラ直起動専用。
+                     photo-file-input: captureなし・multiple あり → ファイル選択専用（複数枚対応）。
+                     処理関数がそれぞれ異なる点に注意。 -->
+                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none">
+                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none">
+
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <button type="button" id="photo-camera-btn" class="btn-main" style="flex:1; background:#2c3e50;"
+                        onclick="document.getElementById('photo-camera-input').click()">
+                        📷 撮影（GPS準備中）
+                    </button>
+                    <button type="button" class="btn-sub" style="flex:1;"
+                        onclick="document.getElementById('photo-file-input').click()">
+                        📁 ファイル選択
+                    </button>
+                </div>
+
                 <!-- 写真の備考 -->
                 <div class="input-group">
                     <label>写真の備考</label>
                     <textarea id="photo-memo" rows="2" oninput="photoApp.updateMemo(this.value)"></textarea>
                 </div>
 
-                <!-- ============================================================
-                     センサー情報エリア（方位・GPS）
-                     ・写真タブを開いた瞬間から常時リアルタイム表示。
-                     ・方位・GPSはそれぞれ独立。撮影前後どちらでも任意に記録可能。
-                     ・備考と同じ操作感：記録ボタンで付与、削除ボタンでnullに戻す。
-                     ・0と未記録(null)は別物として管理する。
-                     ============================================================ -->
+                <!-- センサー情報エリア（方位・GPS） -->
                 <div style="background:#f0f4f8; border:1px solid #dde3ea; border-radius:4px; padding:10px; margin-bottom:8px;">
 
                     <!-- リアルタイム方位 -->
@@ -315,9 +327,9 @@ canvas.sketch-canvas { display: block; width: 100%; }
                         <span id="azimuth-live" style="font-size:0.82rem; font-weight:bold; color:#aaa;">--</span>
                     </div>
 
-                    <!-- この写真の方位（記録値） -->
+                    <!-- 撮影方向（記録値） -->
                     <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:7em;">この写真の方位：</label>
+                        <label style="font-size:0.78rem; color:#666; white-space:nowrap; min-width:5em;">撮影方向：</label>
                         <input type="number" id="photo-azimuth-input" min="0" max="359" placeholder="未記録"
                             style="width:72px; padding:5px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;"
                             oninput="photoApp.updateAzimuth(this.value)">
@@ -341,26 +353,6 @@ canvas.sketch-canvas { display: block; width: 100%; }
                         <button type="button" class="btn-main" style="flex:1; padding:6px; font-size:0.78rem; background:#2c3e50;"
                             onclick="photoApp.modifyGps()">修正</button>
                     </div>
-                </div>
-
-                <!-- 【iPhone対応】inputを2つに分離。
-                     photo-camera-input: capture="environment"・multipleなし → カメラ直起動専用。
-                       iOSでmultipleを付けると動作が不安定になるため1枚専用とする。
-                     photo-file-input: captureなし・multiple あり → ファイル選択専用（複数枚対応）。
-                     処理関数がそれぞれ異なる点に注意。 -->
-                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none">
-                <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none">
-
-                <div style="display:flex; gap:6px;">
-                    <!-- id="photo-camera-btn" を付けることで gpsManager._updateUI() がボタンラベルを動的に書き換える -->
-                    <button type="button" id="photo-camera-btn" class="btn-main" style="flex:1; background:#2c3e50;"
-                        onclick="document.getElementById('photo-camera-input').click()">
-                        📷 撮影（GPS準備中）
-                    </button>
-                    <button type="button" class="btn-sub" style="flex:1;"
-                        onclick="document.getElementById('photo-file-input').click()">
-                        📁 ファイル選択
-                    </button>
                 </div>
 
             </div>
@@ -508,8 +500,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.73)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.73 (写真タブ初回起動時の方位表示修正)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.74)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.74 (写真エリアUI順序修正：撮影ボタンをタグの直下に)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -631,7 +623,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.73</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.74</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
