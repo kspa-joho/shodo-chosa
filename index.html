@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.70)</title>
+    <title>被災状況調査アプリ (Phase 5.71)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -508,8 +508,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.70)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.70 (introduction.html 方位初期テキスト修正)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.71)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.71 (modifyGps・applyGpsFix・renderGpsField復元)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -631,7 +631,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.70</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.71</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -4048,16 +4048,24 @@ window.photoApp = {
 
     // GPS記録欄を現在の写真に合わせて更新
     renderGpsField() {
-        const el = document.getElementById('photo-gps-recorded');
+        const el = document.getElementById('photo-gps-status');
         if (!el) return;
         const p = this.photos[this.currentIndex];
         if (!p || p.lat === null) {
-            el.textContent = '未記録';
+            el.textContent = '未取得';
             el.style.color = '#aaa';
+        } else if (p.gpsAccuracy !== null) {
+            // 撮影時自動記録（精度あり）
+            el.textContent = `${p.gpsAccuracy}m`;
+            el.style.color = p.gpsAccuracy <= 30 ? '#27ae60' : '#e67e22';
+        } else if (p.gpsFixed) {
+            // 地図タップ修正済み
+            el.textContent = `修正済み（${p.lat.toFixed(4)}°, ${p.lng.toFixed(4)}°）`;
+            el.style.color = '#3498db';
         } else {
-            const accStr = p.gpsAccuracy !== null ? `　誤差 ${p.gpsAccuracy}m` : '';
-            el.textContent = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}${accStr}`;
-            el.style.color = p.gpsAccuracy !== null && p.gpsAccuracy <= 30 ? '#27ae60' : '#e67e22';
+            // EXIFから読んだ場合（精度不明）
+            el.textContent = '不明';
+            el.style.color = '#e67e22';
         }
     },
 
@@ -4150,6 +4158,82 @@ window.photoApp = {
     },
 
     updateMemo(v) { if (this.currentIndex !== -1) this.photos[this.currentIndex].memo = v; },
+
+    // ---- 位置情報を地図タップで修正 ----
+    // 写真タブを閉じて位置図タブを開き、GPS修正モードを起動する
+    modifyGps() {
+        if (this.currentIndex === -1) {
+            window.uiHelper && uiHelper.showToast("写真を選択してから修正してください"); return;
+        }
+        const photoIndex = this.currentIndex;
+
+        // 写真タブを閉じる
+        const photoItem    = document.querySelector('.accordion-item[data-group="photo-area"]');
+        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
+        const photoIcon    = photoItem ? photoItem.querySelector('.icon') : null;
+        if (photoContent) photoContent.style.display = 'none';
+        if (photoIcon)    photoIcon.textContent = '+';
+
+        // 位置図タブを開く
+        const mapItem    = document.querySelector('.accordion-item[data-group="map-area"]');
+        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
+        const mapIcon    = mapItem ? mapItem.querySelector('.icon') : null;
+        if (mapContent) mapContent.style.display = 'block';
+        if (mapIcon)    mapIcon.textContent = '-';
+
+        // 地図を初期化してスクロール
+        window.mapApp.init();
+        if (mapItem) mapItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // GPS修正モード開始（少し遅延させて地図の描画を待つ）
+        setTimeout(() => { window.mapApp.startGpsFixMode(photoIndex); }, 400);
+    },
+
+    // 地図タップで確定した座標を写真に適用
+    applyGpsFix(lat, lng) {
+        const photoIndex = window.mapApp._gpsFixPhotoIndex;
+        if (photoIndex === null || photoIndex >= this.photos.length) return;
+
+        this.photos[photoIndex].lat         = lat;
+        this.photos[photoIndex].lng         = lng;
+        this.photos[photoIndex].gpsAccuracy = null;
+        this.photos[photoIndex].gpsFixed    = true;
+
+        // 位置図タブを閉じて写真タブを開く
+        const mapItem    = document.querySelector('.accordion-item[data-group="map-area"]');
+        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
+        const mapIcon    = mapItem ? mapItem.querySelector('.icon') : null;
+        if (mapContent) mapContent.style.display = 'none';
+        if (mapIcon)    mapIcon.textContent = '+';
+
+        const photoItem    = document.querySelector('.accordion-item[data-group="photo-area"]');
+        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
+        const photoIcon    = photoItem ? photoItem.querySelector('.icon') : null;
+        if (photoContent) photoContent.style.display = 'block';
+        if (photoIcon)    photoIcon.textContent = '-';
+
+        this.currentIndex = photoIndex;
+        this.render();
+        if (photoItem) photoItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.uiHelper && uiHelper.showToast("位置情報を修正しました");
+    },
+
+    // キャンセル時に写真タブを復元する
+    _restorePhotoTab() {
+        const photoItem    = document.querySelector('.accordion-item[data-group="photo-area"]');
+        const photoContent = photoItem ? photoItem.querySelector('.accordion-content') : null;
+        const photoIcon    = photoItem ? photoItem.querySelector('.icon') : null;
+        if (photoContent) photoContent.style.display = 'block';
+        if (photoIcon)    photoIcon.textContent = '-';
+
+        const mapItem    = document.querySelector('.accordion-item[data-group="map-area"]');
+        const mapContent = mapItem ? mapItem.querySelector('.accordion-content') : null;
+        const mapIcon    = mapItem ? mapItem.querySelector('.icon') : null;
+        if (mapContent) mapContent.style.display = 'none';
+        if (mapIcon)    mapIcon.textContent = '+';
+
+        if (photoItem) photoItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
 
     updateHeaderSummary() {
         const s = document.querySelector('.accordion-item[data-group="photo-area"] .summary-text');
