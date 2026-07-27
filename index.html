@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>被災状況調査アプリ (Phase 5.65)</title>
+    <title>被災状況調査アプリ (Phase 5.66)</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -512,8 +512,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <section id="content-spec" class="tab-content">
                 <div class="spec-container">
     <header style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 5.65)</h2>
-        <p><strong>Last Updated:</strong> Phase 5.65 (IndexedDB写真永続化・アプリ落ち対策)
+        <h2>被災状況調査システム 開発仕様書 (Phase 5.66)</h2>
+        <p><strong>Last Updated:</strong> Phase 5.66 (DOMContentLoaded二重閉じ括弧バグ修正)
         <p><strong>Status:</strong> App A (Stable)</p>
     </header>
 
@@ -635,7 +635,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <h3>7. PWA更新管理</h3>
         <div style="padding: 15px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px; margin-top: 10px;">
             <p style="margin:0 0 10px 0; font-weight:bold; color: #16a085;">アプリ更新管理</p>
-            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.65</strong></p>
+            <p style="margin:0 0 5px 0; font-size:0.9rem;">現在のバージョン: <strong id="current-version-display">Phase 5.66</strong></p>
             <div style="display:flex; align-items:center; gap:10px;">
                 <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;" onclick="appControl.checkForUpdate()">更新を確認する</button>
                 <span id="update-status" style="font-size:0.9rem; color:#555;"></span>
@@ -4860,9 +4860,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初期値をLocalStorageから読み込む
     window.appControl.loadDefaults();
     // IndexedDBから写真を復元する（アプリが落ちた場合のリカバリー）
-    // オートセーブのメタ情報復元後に呼ぶことで、タグ・備考・GPSが設定済みの状態に画像を復元する
     window.photoStorage.restore();
-});
+
+    // 【iOS対応】カメラ・ファイル選択のchangeリスナーをaddEventListenerで登録する。
     // iOSのSafariではinputのinline onchangeが capture="environment" と組み合わせると
     // 発火しないケースがあるため、DOMContentLoaded後にaddEventListenerで登録する。
     const cameraInput = document.getElementById('photo-camera-input');
