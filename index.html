@@ -761,7 +761,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>【Phase 6.39更新】5.46参照（諸元の参照ボタンの引き継ぎ項目にloc_name・route_nameを追加。applyReferenceFromDefaults（①保存済みの初期値を引用）は、対象項目がいずれも現場ごとに異なる値のため意味を成さなくなり削除。呼び出し元のUIボタンも削除）。【Phase 6.38更新】5.45参照（諸元へ移設した参照ボタンに合わせ、applyReferenceFromDefaults／_applyReferenceFromSiteRecord／_applyReferenceFieldsの引き継ぎ項目をdisaster_no・ref_no・survey_dateに変更（dept_name・damage_dateは除外）。loadDefaultsの反映対象にdept_nameを追加し、「初期値の読み込み」で発注者名も反映されるよう修正）。【Phase 6.27更新】renderDefaultsViewの「被災日」行を「調査日（新規作成時：当日の日付を自動入力）」行に置換。【Phase 6.25更新】UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・CSV出力（exportCSV／_csvRow／_coordsFromMainGeom／_downloadCSV。チェックした現場の保存済みデータから1現場1行）・siteManager（promptCreateSiteは保存確認→現場名入力の順・confirmAndProceedは未保存の変更がある場合のみモーダル表示・現場一覧のチェック状態の引き継ぎ・_resetControlToDefault/_resetSiteInputsによる設定を巻き込まないリセット・renameSite）・更新確認・mapCacheManager・saveDefaults/loadDefaults/renderDefaultsView（保存済み初期値の一覧表示）・clearAll・toggleFullWidth・syncDeptName/syncDisasterNoTab</td></tr>
             <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理（自動キャッシュ方式）・skip-waiting対応</td></tr>
-            <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>β版: start_url/scope=/shodo-chosa-beta/</td></tr>
+            <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>【Phase 6.39更新】β版フォルダから本番フォルダ（shodo-chosa）へ移行。start_url/scope=/shodo-chosa/、short_name=「調査アプリ」（旧「調査β版」）</td></tr>
             <tr><td><code>piexif.js</code></td><td>EXIFライブラリ</td><td>piexifjs v1.0.6。src/直下に配置しビルド時にインライン埋め込み</td></tr>
             <tr><td><code>rogo-AAA.txt</code></td><td>ロゴデータ</td><td>Base64エンコード画像（ビルド時にインライン埋め込み）</td></tr>
         </table>
@@ -818,12 +818,13 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>初期値のLocalStorageはクリア操作では削除しない。</strong></li>
         </ul>
 
-        <h4>5.5 PWA・デプロイ（β版）</h4>
+        <h4>5.5 PWA・デプロイ</h4>
         <ul>
-            <li>GitHub Pages: <code>https://kspa-joho.github.io/shodo-chosa-beta/</code></li>
-            <li>manifest.jsonのstart_url/scope: <code>/shodo-chosa-beta/</code></li>
+            <li><strong>【Phase 6.39更新】</strong>β版（shodo-chosa-beta）から本番フォルダ（shodo-chosa）への移行に伴い、URLを更新した。旧shodo-chosaの内容は同リポジトリ内「旧版」フォルダへ退避済み。</li>
+            <li>GitHub Pages: <code>https://kspa-joho.github.io/shodo-chosa/</code></li>
+            <li>manifest.jsonのstart_url/scope: <code>/shodo-chosa/</code></li>
             <li>新バージョン検知時に確認ダイアログ→skip-waiting→自動リロード。「アプリ更新」アコーディオンは開発タブ内に1箇所のみ（dev.html）。</li>
-            <li>統合管理版DLリンク: <code>https://github.com/kspa-joho/shodo-chosa-beta/raw/main/manager_app.zip</code></li>
+            <li>統合管理版DLリンク: <code>https://github.com/kspa-joho/shodo-chosa/raw/main/manager_app.zip</code></li>
         </ul>
 
         <h4>5.6 ズームレベル数値表示（Phase 6.05）</h4>
