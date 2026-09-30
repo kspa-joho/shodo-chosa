@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.43)</title>
+    <title>被災状況調査アプリ (Phase 6.44)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -491,11 +491,9 @@ canvas.sketch-canvas { display: block; width: 100%; }
                  市区町村名・町名を取得し、この欄へ自動入力するボタン。オンライン時のみ対応。 -->
             <div class="input-group">
                 <label>被災場所</label>
-                <div style="display:flex; gap:6px;">
-                    <input type="text" name="loc_name" placeholder="住所等" style="flex:1;">
-                    <button type="button" class="btn-sub" style="flex:0 0 auto; padding:8px 10px; font-size:0.8rem; white-space:nowrap;"
-                        onclick="mapApp.reverseGeocodeLocation()">位置図から反映</button>
-                </div>
+                <input type="text" name="loc_name" placeholder="住所等">
+                <button type="button" class="btn-sub" style="margin-top:6px; font-size:0.8rem;"
+                    onclick="mapApp.reverseGeocodeLocation()">位置図から反映</button>
             </div>
             <div class="input-group"><label>路線・河川名等</label><input type="text" name="route_name"></div>
         </div>
@@ -710,12 +708,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.43</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.44</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.43</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.44</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -734,8 +732,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.43)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.43（諸元「被災場所」のボタン名を「📍地図から取得」から「位置図から反映」に変更。挙動（ボタンを押したときだけ反映。未入力なら入力・既入力なら上書き。位置図に点を置いただけでは自動で書き換わらない）はPhase 6.42のまま）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.44)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.44（諸元「被災場所」の「位置図から反映」ボタンのレイアウト崩れを修正。inputとボタンを横並びflexにしていたためボタンが画面外にはみ出し、inputも極端に狭くなっていた不具合を、input→ボタンの縦積みに変更して解消）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -773,7 +771,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>install_guide.html</code></td><td>インストール手順</td><td>iPhone/Android向けPWA追加手順・統合管理版DLリンク（β版リポジトリ）</td></tr>
             <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡す。</td></tr>
             <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>【Phase 6.33更新】5.43参照（背景画像機能を追加。setBackgroundFromFile／clearBackground／drawBackground。LocalStorage・IndexedDBには保存しない）。【Phase 6.27更新】ペン色を12色プルダウン(#sketch-color-select)で選択（setColorがプルダウンと同期。start()でプルダウン値とペン色の食い違いを解消）。Canvas描画（ペン/直線/文字/編集/Undo）</td></tr>
-            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.43更新】5.48参照（「被災場所」横のボタン名を「📍地図から取得」→「位置図から反映」に変更。onclickは変更なし）。【Phase 6.42更新】5.48参照（諸元「被災場所」inputの横に「位置図から反映」ボタンを追加。onclick="mapApp.reverseGeocodeLocation()"）。【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
+            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.44更新】5.48参照（「被災場所」の「位置図から反映」ボタンのレイアウト崩れ修正。inputとボタンをdisplay:flexで横並びにしていたためボタンが画面外へはみ出していた不具合を、縦積みレイアウトに変更して解消）。【Phase 6.43更新】5.48参照（「被災場所」横のボタン名を「📍地図から取得」→「位置図から反映」に変更。onclickは変更なし）。【Phase 6.42更新】5.48参照（諸元「被災場所」inputの横に「位置図から反映」ボタンを追加。onclick="mapApp.reverseGeocodeLocation()"）。【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
             <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>【Phase 6.42更新】5.48参照（mapApp._getMainLatLng()・mapApp.KAGOSHIMA_MUNI_NAMES（鹿児島県内市区町村コード→名称の対応表）・mapApp.reverseGeocodeLocation()を追加。メインの点の位置を国土地理院APIへ渡し、返ってきた市区町村コード・町名から諸元「被災場所」を自動入力する）。【Phase 6.37更新】5.44参照（「KMLへ移動」(zoomToKml)を追加。KMLレイヤーの生成をL.layerGroupからL.featureGroupに変更し、getBounds()が無く範囲取得(fitBounds)が常に失敗していたバグを修正）。【Phase 6.35更新】5.44のトースト文言を用途限定しない表現に修正。【Phase 6.34更新】5.44参照（任意のKMLを参考レイヤとして読込表示。用途は限定しない。loadKmlFile／_buildKmlLayer／clearKml。allDrawnItemsとは別レイヤーで保存・地図の写真保存の対象外）。【Phase 6.32更新】5.42参照（編集中の要素を単体削除する「単要素削除」ボタンを追加）。【Phase 6.31更新】5.41参照（編集を「選択してから編集」の3段階に変更・範囲(Polygon)の途中完了を修正）。【Phase 6.30更新】5.40参照（操作パネルを地図下へ・アイコン1.5倍・編集のメイン/サブ分離・連続線修正・点の現在地/画面タップ選択）。【Phase 6.26更新】描画ツールバーを地図枠外の上部バー(#map-draw-bar)へ移すmapApp._moveDrawControlOutside()を追加。【Phase 6.24更新】Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）。中心の十字線（_addCrosshair）・メイン〇のマーク（createMainMark。ピクセル指定のL.circleMarker。サイズ定数MAIN_MARK_RADIUS_PX／MAIN_MARK_WEIGHT）</td></tr>
             <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.41更新】renderReorderControls()内、#photo-reorder-controlsの表示スタイルをinline-blockからinline-flexに変更（ラベル追加に伴うレイアウト調整）。5.47参照。【Phase 6.40更新】5.47参照（render()から新設のrenderReorderControls()を呼び、写真順入れ替え▲▼ボタン（#photo-reorder-controls）の表示・無効化状態を更新。並び替え本体のmove()自体は既存のまま変更なし）。【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>【Phase 6.39更新】5.46参照（諸元の参照ボタンの引き継ぎ項目にloc_name・route_nameを追加。applyReferenceFromDefaults（①保存済みの初期値を引用）は、対象項目がいずれも現場ごとに異なる値のため意味を成さなくなり削除。呼び出し元のUIボタンも削除）。【Phase 6.38更新】5.45参照（諸元へ移設した参照ボタンに合わせ、applyReferenceFromDefaults／_applyReferenceFromSiteRecord／_applyReferenceFieldsの引き継ぎ項目をdisaster_no・ref_no・survey_dateに変更（dept_name・damage_dateは除外）。loadDefaultsの反映対象にdept_nameを追加し、「初期値の読み込み」で発注者名も反映されるよう修正）。【Phase 6.27更新】renderDefaultsViewの「被災日」行を「調査日（新規作成時：当日の日付を自動入力）」行に置換。【Phase 6.25更新】UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・CSV出力（exportCSV／_csvRow／_coordsFromMainGeom／_downloadCSV。チェックした現場の保存済みデータから1現場1行）・siteManager（promptCreateSiteは保存確認→現場名入力の順・confirmAndProceedは未保存の変更がある場合のみモーダル表示・現場一覧のチェック状態の引き継ぎ・_resetControlToDefault/_resetSiteInputsによる設定を巻き込まないリセット・renameSite）・更新確認・mapCacheManager・saveDefaults/loadDefaults/renderDefaultsView（保存済み初期値の一覧表示）・clearAll・toggleFullWidth・syncDeptName/syncDisasterNoTab</td></tr>
@@ -1422,7 +1420,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>使うAPI:</strong> 国土地理院の逆ジオコーディングAPI（<code>https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress</code>）。緯度経度を渡すと、市区町村コード（<code>muniCd</code>）と町名（<code>lv01Nm</code>）のJSONが返る（例：<code>{"results":{"muniCd":"46201","lv01Nm":"山下町"}}</code>）。認証不要・無料。</li>
             <li><strong>市区町村コード→市区町村名の対応表が別途必要な理由:</strong> このAPIは市区町村コードそのものは返すが、市区町村名（「鹿児島市」等）までは返さない。全国分（約1,900件）の対応表を持たせると容量が大きくなるため、本アプリの主な利用範囲である鹿児島県内（コード46xxx）のみを<code>1_script_map.js</code>の<code>mapApp.KAGOSHIMA_MUNI_NAMES</code>に内蔵した（19市＋24町村、計43件）。</li>
             <li><strong>対象地点:</strong> 位置図のメインの点（マーカー）の位置を使う。メインが線・範囲の場合は始点を代表点として使う（<code>mapApp._getMainLatLng()</code>）。メインが未設置の場合はボタンを押してもトーストで案内するのみで、APIは呼ばない。</li>
-            <li><strong>UI（introduction.html）:</strong> 諸元アコーディオンの「被災場所」inputの右に「位置図から反映」ボタンを追加。<code>onclick="mapApp.reverseGeocodeLocation()"</code>を呼ぶだけで、他の項目のような専用モーダル等は設けていない。【Phase 6.43】ボタン名は当初「📍地図から取得」としていたが、「位置図に点を置いた時点で自動反映される」と誤解されやすいとの指摘を受け、「反映は必ずボタンを押した時だけ」という手動操作であることが伝わる「位置図から反映」に変更した。</li>
+            <li><strong>UI（introduction.html）:</strong> 諸元アコーディオンの「被災場所」inputの下に「位置図から反映」ボタンを配置。<code>onclick="mapApp.reverseGeocodeLocation()"</code>を呼ぶだけで、他の項目のような専用モーダル等は設けていない。【Phase 6.43】ボタン名は当初「📍地図から取得」としていたが、「位置図に点を置いた時点で自動反映される」と誤解されやすいとの指摘を受け、「反映は必ずボタンを押した時だけ」という手動操作であることが伝わる「位置図から反映」に変更した。【Phase 6.44】当初はinputとボタンを<code>display:flex</code>で横並びにしていたが、input側の既定スタイル（幅の指定）とflexの組み合わせでボタンが画面外にはみ出し、inputも極端に狭くなるレイアウト崩れが実機で発生した。横並びをやめ、inputの下にボタンを縦に積む素直なレイアウトに変更して解消した。</li>
             <li><strong>反映の挙動（確定）:</strong> ボタンを押したときだけ処理が走る。①「被災場所」が未入力なら取得した値を入力する。②既に何か入力されていても、ボタンを押せばその内容を（取得できた値で）上書きする。③位置図でメインの点を置く・動かす操作自体では、この欄は一切自動更新されない（＝反映のタイミングは常にユーザーがボタンを押した瞬間のみで、裏側で勝手に書き換わることはない）。値は取得後も普通の入力欄としてユーザーが自由に修正できる（読み取り専用にはしていない）。</li>
             <li><strong>失敗時の扱い:</strong> オフライン等でAPIの呼び出しに失敗した場合は、トーストで「住所の取得に失敗しました。オンライン時のみ対応の機能です」と案内するだけで、自動リトライや代替手段は用意していない（案内した仕様どおり）。海上等、APIがmuniCdを返さない地点の場合も同様にトーストで案内する。</li>
             <li><strong>実機確認が必要な点:</strong> 実際の端末・通信環境で、鹿児島県内の地点を指定したときに市区町村名＋町名が正しく入力されること。オフライン時にエラーメッセージが出ること。メイン未設置時にAPIを呼ばずトーストのみで終わること。</li>
@@ -1502,6 +1500,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.41完了・実機確認待ち】</strong>写真順入れ替えボタンの表記を「▲▼」のみから「▲ 写真順入れ替え ▼」に修正（機能・表示条件は6.40のまま）。詳細は5.47参照。</li>
             <li><strong>【Phase 6.42完了・実機確認待ち】</strong>意見箱の要望対応：諸元「被災場所」に、位置図のメインの点から国土地理院の逆ジオコーディングAPIで市区町村名・町名を取得して入力するボタンを追加（鹿児島県内のみ市区町村名まで対応。県外は町名のみ）。詳細は5.48参照。</li>
             <li><strong>【Phase 6.43完了・実機確認待ち】</strong>上記ボタンの表記を「📍地図から取得」から「位置図から反映」に変更（反映はボタンを押した時だけで、位置図に点を置いただけでは自動更新されない挙動はPhase 6.42から変更なし）。詳細は5.48参照。</li>
+            <li><strong>【Phase 6.44完了・実機確認待ち】</strong>「位置図から反映」ボタンが画面外にはみ出し、被災場所inputも極端に狭くなっていたレイアウト崩れを修正（横並びflexをやめ、input→ボタンの縦積みに変更）。詳細は5.48参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
