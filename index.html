@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.40)</title>
+    <title>被災状況調査アプリ (Phase 6.41)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -584,9 +584,10 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <button type="button" onclick="photoApp.prev()">← 前の写真</button>
                     <span id="photo-counter">0/0</span>
                     <button type="button" onclick="photoApp.next()">次の写真 →</button>
-                    <span id="photo-reorder-controls" style="display:none; margin-left:6px;" title="写真順入れ替え（補足タグ内のみ）">
-                        <button type="button" id="photo-move-up" style="padding:4px 8px;" onclick="photoApp.move(-1)">▲</button>
-                        <button type="button" id="photo-move-down" style="padding:4px 8px;" onclick="photoApp.move(1)">▼</button>
+                    <span id="photo-reorder-controls" style="display:none; align-items:center; gap:4px; margin-left:6px; font-size:0.8rem;">
+                        <button type="button" id="photo-move-up" style="padding:4px 6px;" onclick="photoApp.move(-1)">▲</button>
+                        <span>写真順入れ替え</span>
+                        <button type="button" id="photo-move-down" style="padding:4px 6px;" onclick="photoApp.move(1)">▼</button>
                     </span>
                 </div>
 
@@ -700,12 +701,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.40</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.41</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.40</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.41</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -724,8 +725,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.40)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.40（写真タブ「補足」タグ内で写真の並び順を入れ替えるボタン（▲▼）を追加。並び替え自体を行う<code>photoApp.move()</code>は既存だったが、呼び出すUIが無く使えない状態だったため、UIを追加して有効化した）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.41)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.41（写真順入れ替えボタンの表記を「▲▼」のみから「▲ 写真順入れ替え ▼」に修正。Phase 6.40で追加した並び替え機能自体・表示条件は変更なし）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -763,9 +764,9 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>install_guide.html</code></td><td>インストール手順</td><td>iPhone/Android向けPWA追加手順・統合管理版DLリンク（β版リポジトリ）</td></tr>
             <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡す。</td></tr>
             <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>【Phase 6.33更新】5.43参照（背景画像機能を追加。setBackgroundFromFile／clearBackground／drawBackground。LocalStorage・IndexedDBには保存しない）。【Phase 6.27更新】ペン色を12色プルダウン(#sketch-color-select)で選択（setColorがプルダウンと同期。start()でプルダウン値とペン色の食い違いを解消）。Canvas描画（ペン/直線/文字/編集/Undo）</td></tr>
-            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
+            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
             <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>【Phase 6.37更新】5.44参照（「KMLへ移動」(zoomToKml)を追加。KMLレイヤーの生成をL.layerGroupからL.featureGroupに変更し、getBounds()が無く範囲取得(fitBounds)が常に失敗していたバグを修正）。【Phase 6.35更新】5.44のトースト文言を用途限定しない表現に修正。【Phase 6.34更新】5.44参照（任意のKMLを参考レイヤとして読込表示。用途は限定しない。loadKmlFile／_buildKmlLayer／clearKml。allDrawnItemsとは別レイヤーで保存・地図の写真保存の対象外）。【Phase 6.32更新】5.42参照（編集中の要素を単体削除する「単要素削除」ボタンを追加）。【Phase 6.31更新】5.41参照（編集を「選択してから編集」の3段階に変更・範囲(Polygon)の途中完了を修正）。【Phase 6.30更新】5.40参照（操作パネルを地図下へ・アイコン1.5倍・編集のメイン/サブ分離・連続線修正・点の現在地/画面タップ選択）。【Phase 6.26更新】描画ツールバーを地図枠外の上部バー(#map-draw-bar)へ移すmapApp._moveDrawControlOutside()を追加。【Phase 6.24更新】Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）。中心の十字線（_addCrosshair）・メイン〇のマーク（createMainMark。ピクセル指定のL.circleMarker。サイズ定数MAIN_MARK_RADIUS_PX／MAIN_MARK_WEIGHT）</td></tr>
-            <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.40更新】5.47参照（render()から新設のrenderReorderControls()を呼び、写真順入れ替え▲▼ボタン（#photo-reorder-controls）の表示・無効化状態を更新。並び替え本体のmove()自体は既存のまま変更なし）。【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
+            <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.41更新】renderReorderControls()内、#photo-reorder-controlsの表示スタイルをinline-blockからinline-flexに変更（ラベル追加に伴うレイアウト調整）。5.47参照。【Phase 6.40更新】5.47参照（render()から新設のrenderReorderControls()を呼び、写真順入れ替え▲▼ボタン（#photo-reorder-controls）の表示・無効化状態を更新。並び替え本体のmove()自体は既存のまま変更なし）。【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>【Phase 6.39更新】5.46参照（諸元の参照ボタンの引き継ぎ項目にloc_name・route_nameを追加。applyReferenceFromDefaults（①保存済みの初期値を引用）は、対象項目がいずれも現場ごとに異なる値のため意味を成さなくなり削除。呼び出し元のUIボタンも削除）。【Phase 6.38更新】5.45参照（諸元へ移設した参照ボタンに合わせ、applyReferenceFromDefaults／_applyReferenceFromSiteRecord／_applyReferenceFieldsの引き継ぎ項目をdisaster_no・ref_no・survey_dateに変更（dept_name・damage_dateは除外）。loadDefaultsの反映対象にdept_nameを追加し、「初期値の読み込み」で発注者名も反映されるよう修正）。【Phase 6.27更新】renderDefaultsViewの「被災日」行を「調査日（新規作成時：当日の日付を自動入力）」行に置換。【Phase 6.25更新】UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・CSV出力（exportCSV／_csvRow／_coordsFromMainGeom／_downloadCSV。チェックした現場の保存済みデータから1現場1行）・siteManager（promptCreateSiteは保存確認→現場名入力の順・confirmAndProceedは未保存の変更がある場合のみモーダル表示・現場一覧のチェック状態の引き継ぎ・_resetControlToDefault/_resetSiteInputsによる設定を巻き込まないリセット・renameSite）・更新確認・mapCacheManager・saveDefaults/loadDefaults/renderDefaultsView（保存済み初期値の一覧表示）・clearAll・toggleFullWidth・syncDeptName/syncDisasterNoTab</td></tr>
             <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理（自動キャッシュ方式）・skip-waiting対応</td></tr>
             <tr><td><code>manifest.json</code></td><td>PWAマニフェスト</td><td>【Phase 6.39更新】β版フォルダから本番フォルダ（shodo-chosa）へ移行。start_url/scope=/shodo-chosa/、short_name=「調査アプリ」（旧「調査β版」）</td></tr>
@@ -1400,7 +1401,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <ul>
             <li><strong>経緯（意見箱回答）:</strong> 意見箱に「写真の配置を入れ替えることが可能だといいなと思いました（位置図,全景近景以外）」という要望があった。調査したところ、写真の並び替え自体を行う<code>photoApp.move(direction)</code>関数は既に実装されていた（現在の写真を1つ前／後の写真と入れ替える。同じタグ内でしか入れ替えられない制限も既にあり、異なるタグ間で呼ぶとアラートで拒否する）。しかし、この関数を呼び出すUIボタンがどこにも設置されておらず、機能自体が使えない「死んだコード」になっていた。今回、UIを追加してこの既存機能を有効化した。</li>
             <li><strong>対象タグの絞り込み:</strong> 写真のタグは全景・近景・補足・地図メモの4種類。全景・近景は各タグ1枚までしか持てない仕様のため並び替えの余地がなく、地図メモも通常は少数枚。ご意見が想定する「複数枚を並び替えたい」対象は実質「補足」タグの写真のみのため、▲▼ボタンは「補足」タグの写真を表示しているときだけ表示する（他のタグでは非表示）。</li>
-            <li><strong>UI（introduction.html）:</strong> 写真タブの<code>.photo-nav</code>（前の写真／写真カウンター／次の写真の行）に、<code>&lt;span id="photo-reorder-controls"&gt;</code>で囲んだ▲（<code>#photo-move-up</code>）・▼（<code>#photo-move-down</code>）ボタンを追加。「次の写真 →」ボタンの右側の余白に配置。それぞれ<code>onclick="photoApp.move(-1)"</code>／<code>onclick="photoApp.move(1)"</code>を呼ぶだけで、レイアウト用に<code>.photo-nav</code>へ<code>display:flex; flex-wrap:wrap</code>を付与した。</li>
+            <li><strong>UI（introduction.html）:</strong> 写真タブの<code>.photo-nav</code>（前の写真／写真カウンター／次の写真の行）に、<code>&lt;span id="photo-reorder-controls"&gt;</code>で囲んだ▲（<code>#photo-move-up</code>）・「写真順入れ替え」ラベル・▼（<code>#photo-move-down</code>）を追加。「次の写真 →」ボタンの右側の余白に配置。▲▼はそれぞれ<code>onclick="photoApp.move(-1)"</code>／<code>onclick="photoApp.move(1)"</code>を呼ぶだけで、レイアウト用に<code>.photo-nav</code>へ<code>display:flex; flex-wrap:wrap</code>を付与した。【Phase 6.41修正】当初は▲▼のみの表記だったが、意味が伝わりにくいとの指摘を受け、間に「写真順入れ替え」ラベルを挟む表記に変更した。これに合わせ<code>#photo-reorder-controls</code>自体もinline-flex（<code>align-items:center; gap:4px</code>）にして3つの子要素が横並びになるようにした。</li>
             <li><strong>表示・無効化制御（2_script_photo.js）:</strong> <code>render()</code>の最後（写真0枚のときの早期returnの直前も含む）で新設の<code>renderReorderControls()</code>を呼ぶ。この関数は、表示中の写真のタグが「補足」でなければ<code>#photo-reorder-controls</code>ごと非表示にする。「補足」であれば表示し、さらにグループの先頭（1つ前が補足タグでない）なら▲を、末尾（1つ次が補足タグでない）なら▼を<code>disabled</code>にする。</li>
             <li><strong>並び替え自体の挙動:</strong> <code>move()</code>本体は変更していない。入れ替え後は<code>currentIndex</code>が入れ替え先の位置に移るため、写真ビューアーは「入れ替えた写真についていく」形になる（＝ボタンを繰り返し押すと同じ写真がどんどん前／後ろへ動く）。</li>
             <li><strong>実機確認が必要な点:</strong> 「補足」タグの写真を複数枚登録した状態で▲▼を押し、順序が入れ替わり<code>photoStorage</code>（IndexedDB）にも同期されること。全景・近景・地図メモ表示中はボタンが出ないこと。「補足」の先頭／末尾で該当ボタンが押せない（disabled）こと。</li>
@@ -1477,6 +1478,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.38完了・実機確認待ち】</strong>管理タブ「管理項目」を「共通項目」に改名し、会社ID・調査班長名・発注者名の3項目のみに縮小。整理番号・調査日・災害番号と「他の現場から引用」ボタン・参照モーダルは現地調査タブ「諸元」へ移設し、引き継ぐ項目も整理番号・調査日・災害番号の3項目に変更。あわせて「初期値の読み込み」が発注者名を反映していなかった抜けも修正。詳細は5.45参照。</li>
             <li><strong>【Phase 6.39完了・実機確認待ち】</strong>諸元「他の現場から引用」の対象に被災場所・路線河川名等を追加（計5項目）。対象がいずれも現場ごとに異なる値のみになったため①「保存済みの初期値を引用」を撤去し②③の2択に整理。現地調査タブ「保存」の「日報用CSVエクスポート」（管理タブと重複）を削除。詳細は5.46参照。</li>
             <li><strong>【Phase 6.40完了・実機確認待ち】</strong>意見箱の要望対応：写真「補足」タグ内で並び順を入れ替える▲▼ボタンを追加。並び替え本体（photoApp.move）は既存だったが呼び出すUIが無かったため、UIを新設して有効化した。詳細は5.47参照。</li>
+            <li><strong>【Phase 6.41完了・実機確認待ち】</strong>写真順入れ替えボタンの表記を「▲▼」のみから「▲ 写真順入れ替え ▼」に修正（機能・表示条件は6.40のまま）。詳細は5.47参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
@@ -6270,7 +6272,7 @@ window.photoApp = {
             wrap.style.display = 'none';
             return;
         }
-        wrap.style.display = 'inline-block';
+        wrap.style.display = 'inline-flex';
         upBtn.disabled   = (this.currentIndex === 0 || this.photos[this.currentIndex - 1].tag !== '補足');
         downBtn.disabled = (this.currentIndex === this.photos.length - 1 || this.photos[this.currentIndex + 1].tag !== '補足');
     },
