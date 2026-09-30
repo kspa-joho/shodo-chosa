@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.44)</title>
+    <title>被災状況調査アプリ (Phase 6.45)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -708,12 +708,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.44</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.45</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.44</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.45</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -732,8 +732,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.44)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.44（諸元「被災場所」の「位置図から反映」ボタンのレイアウト崩れを修正。inputとボタンを横並びflexにしていたためボタンが画面外にはみ出し、inputも極端に狭くなっていた不具合を、input→ボタンの縦積みに変更して解消）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.45)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.45（意見箱指摘「別アプリ（カメラ）起動で位置図画像が消える」の真因を修正。「地図を写真に保存」captureToPhoto()にIndexedDBへの同期呼び出し（photoStorage.syncAll）が漏れていたため、同期前に別アプリへ切替＝ブラウザ再起動されるとその画像だけが失われていた。カメラ撮影・ファイル選択と同様の同期呼び出しを追加して解消。詳細は5.8参照）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -772,7 +772,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡す。</td></tr>
             <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>【Phase 6.33更新】5.43参照（背景画像機能を追加。setBackgroundFromFile／clearBackground／drawBackground。LocalStorage・IndexedDBには保存しない）。【Phase 6.27更新】ペン色を12色プルダウン(#sketch-color-select)で選択（setColorがプルダウンと同期。start()でプルダウン値とペン色の食い違いを解消）。Canvas描画（ペン/直線/文字/編集/Undo）</td></tr>
             <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.44更新】5.48参照（「被災場所」の「位置図から反映」ボタンのレイアウト崩れ修正。inputとボタンをdisplay:flexで横並びにしていたためボタンが画面外へはみ出していた不具合を、縦積みレイアウトに変更して解消）。【Phase 6.43更新】5.48参照（「被災場所」横のボタン名を「📍地図から取得」→「位置図から反映」に変更。onclickは変更なし）。【Phase 6.42更新】5.48参照（諸元「被災場所」inputの横に「位置図から反映」ボタンを追加。onclick="mapApp.reverseGeocodeLocation()"）。【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
-            <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>【Phase 6.42更新】5.48参照（mapApp._getMainLatLng()・mapApp.KAGOSHIMA_MUNI_NAMES（鹿児島県内市区町村コード→名称の対応表）・mapApp.reverseGeocodeLocation()を追加。メインの点の位置を国土地理院APIへ渡し、返ってきた市区町村コード・町名から諸元「被災場所」を自動入力する）。【Phase 6.37更新】5.44参照（「KMLへ移動」(zoomToKml)を追加。KMLレイヤーの生成をL.layerGroupからL.featureGroupに変更し、getBounds()が無く範囲取得(fitBounds)が常に失敗していたバグを修正）。【Phase 6.35更新】5.44のトースト文言を用途限定しない表現に修正。【Phase 6.34更新】5.44参照（任意のKMLを参考レイヤとして読込表示。用途は限定しない。loadKmlFile／_buildKmlLayer／clearKml。allDrawnItemsとは別レイヤーで保存・地図の写真保存の対象外）。【Phase 6.32更新】5.42参照（編集中の要素を単体削除する「単要素削除」ボタンを追加）。【Phase 6.31更新】5.41参照（編集を「選択してから編集」の3段階に変更・範囲(Polygon)の途中完了を修正）。【Phase 6.30更新】5.40参照（操作パネルを地図下へ・アイコン1.5倍・編集のメイン/サブ分離・連続線修正・点の現在地/画面タップ選択）。【Phase 6.26更新】描画ツールバーを地図枠外の上部バー(#map-draw-bar)へ移すmapApp._moveDrawControlOutside()を追加。【Phase 6.24更新】Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）。中心の十字線（_addCrosshair）・メイン〇のマーク（createMainMark。ピクセル指定のL.circleMarker。サイズ定数MAIN_MARK_RADIUS_PX／MAIN_MARK_WEIGHT）</td></tr>
+            <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>【Phase 6.45更新】5.8参照（captureToPhoto()に、photoApp.photos.push()直後のwindow.photoStorage.syncAll(window.photoApp.photos)呼び出しを追加。カメラ撮影・ファイル選択の追加処理と異なりIndexedDBへの同期が漏れており、「地図を写真に保存」直後に別アプリへ切替＝ブラウザがバックグラウンド再起動されるとその画像だけが失われる不具合の修正）。【Phase 6.42更新】5.48参照（mapApp._getMainLatLng()・mapApp.KAGOSHIMA_MUNI_NAMES（鹿児島県内市区町村コード→名称の対応表）・mapApp.reverseGeocodeLocation()を追加。メインの点の位置を国土地理院APIへ渡し、返ってきた市区町村コード・町名から諸元「被災場所」を自動入力する）。【Phase 6.37更新】5.44参照（「KMLへ移動」(zoomToKml)を追加。KMLレイヤーの生成をL.layerGroupからL.featureGroupに変更し、getBounds()が無く範囲取得(fitBounds)が常に失敗していたバグを修正）。【Phase 6.35更新】5.44のトースト文言を用途限定しない表現に修正。【Phase 6.34更新】5.44参照（任意のKMLを参考レイヤとして読込表示。用途は限定しない。loadKmlFile／_buildKmlLayer／clearKml。allDrawnItemsとは別レイヤーで保存・地図の写真保存の対象外）。【Phase 6.32更新】5.42参照（編集中の要素を単体削除する「単要素削除」ボタンを追加）。【Phase 6.31更新】5.41参照（編集を「選択してから編集」の3段階に変更・範囲(Polygon)の途中完了を修正）。【Phase 6.30更新】5.40参照（操作パネルを地図下へ・アイコン1.5倍・編集のメイン/サブ分離・連続線修正・点の現在地/画面タップ選択）。【Phase 6.26更新】描画ツールバーを地図枠外の上部バー(#map-draw-bar)へ移すmapApp._moveDrawControlOutside()を追加。【Phase 6.24更新】Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）。中心の十字線（_addCrosshair）・メイン〇のマーク（createMainMark。ピクセル指定のL.circleMarker。サイズ定数MAIN_MARK_RADIUS_PX／MAIN_MARK_WEIGHT）</td></tr>
             <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.41更新】renderReorderControls()内、#photo-reorder-controlsの表示スタイルをinline-blockからinline-flexに変更（ラベル追加に伴うレイアウト調整）。5.47参照。【Phase 6.40更新】5.47参照（render()から新設のrenderReorderControls()を呼び、写真順入れ替え▲▼ボタン（#photo-reorder-controls）の表示・無効化状態を更新。並び替え本体のmove()自体は既存のまま変更なし）。【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>【Phase 6.39更新】5.46参照（諸元の参照ボタンの引き継ぎ項目にloc_name・route_nameを追加。applyReferenceFromDefaults（①保存済みの初期値を引用）は、対象項目がいずれも現場ごとに異なる値のため意味を成さなくなり削除。呼び出し元のUIボタンも削除）。【Phase 6.38更新】5.45参照（諸元へ移設した参照ボタンに合わせ、applyReferenceFromDefaults／_applyReferenceFromSiteRecord／_applyReferenceFieldsの引き継ぎ項目をdisaster_no・ref_no・survey_dateに変更（dept_name・damage_dateは除外）。loadDefaultsの反映対象にdept_nameを追加し、「初期値の読み込み」で発注者名も反映されるよう修正）。【Phase 6.27更新】renderDefaultsViewの「被災日」行を「調査日（新規作成時：当日の日付を自動入力）」行に置換。【Phase 6.25更新】UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・CSV出力（exportCSV／_csvRow／_coordsFromMainGeom／_downloadCSV。チェックした現場の保存済みデータから1現場1行）・siteManager（promptCreateSiteは保存確認→現場名入力の順・confirmAndProceedは未保存の変更がある場合のみモーダル表示・現場一覧のチェック状態の引き継ぎ・_resetControlToDefault/_resetSiteInputsによる設定を巻き込まないリセット・renameSite）・更新確認・mapCacheManager・saveDefaults/loadDefaults/renderDefaultsView（保存済み初期値の一覧表示）・clearAll・toggleFullWidth・syncDeptName/syncDisasterNoTab</td></tr>
             <tr><td><code>sw.js</code></td><td>Service Worker</td><td>地図タイル・アプリ本体のキャッシュ管理（自動キャッシュ方式）・skip-waiting対応</td></tr>
@@ -872,6 +872,14 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>既知の簡略化:</strong> サブ(落書き)モードで置いた素のマーカー（旗揚げ用途）は、Leafletの標準ピン画像そのものではなく、色付きの丸として簡略描画する。</li>
             <li><strong>依存ライブラリの削除:</strong> leaflet-image・html2canvasのいずれもindex.html.templateから削除した。地図画像化は外部ライブラリ非依存になった。</li>
             <li><strong>地理院地図Vector（ベクトルタイル）は今回の対応範囲外:</strong> Vector化すれば地理院標準は理論上どのズームでも実データを描き直せるが、地理院写真（航空写真）・ESRI衛星は実写真のタイル画像であるためVector化できず、同じ問題が残る。今後の検討課題として残す（実装は別スレッドで大きめの改修になる想定）。</li>
+            <li><strong>【Phase 6.45修正】IndexedDB同期漏れ（意見箱指摘：別アプリ切替時の位置図画像消失）:</strong>
+                <ul>
+                    <li><strong>報告内容:</strong> 「別のアプリ（カメラ）を立ち上げると、位置図画像が亡失する」という意見箱指摘に対し、当初「ブラウザがバックグラウンドで再起動され、未保存の位置図データが失われる場合がある。こまめに上書き保存を」という回答を用意していたが、実際に描画データ（mainGeom/subGeom）は地図操作のたびに<code>storageManager.save()</code>経由でLocalStorageへ自動保存されており、この説明は不正確だった。</li>
+                    <li><strong>本当の原因:</strong> カメラ撮影・ファイル選択で写真を追加する<code>handleCameraInput()</code>・<code>handleFileSelect()</code>（2_script_photo.js）は、追加直後に必ず<code>photoStorage.syncAll(this.photos)</code>を呼んでIndexedDBへ同期しているのに対し、「地図を写真に保存」（<code>captureToPhoto()</code>、1_script_map.js）だけはこの同期呼び出しが実装から漏れており、次に<code>commitCurrentToSite()</code>（現場保存・現場切替時）が呼ばれるまでJSメモリ上にしか画像実体（dataUrl）が存在しない状態になっていた。そのため、その前に別アプリ（カメラ等）を起動してブラウザがバックグラウンドで再起動されると、その画像だけがIndexedDBに永続化されないまま失われていた。現場管理機能（IndexedDB永続化）自体は正常に機能しており、<code>captureToPhoto()</code>側の実装漏れが真因。</li>
+                    <li><strong>修正内容:</strong> <code>captureToPhoto()</code>内、<code>photoApp.photos.push()</code>直後に、他の追加経路と同じく<code>window.photoStorage.syncAll(window.photoApp.photos)</code>を呼ぶよう追加した（siteId省略時は<code>photoStorage._currentSiteId()</code>が現在の現場IDを自動で使うため、他の呼び出し箇所と同様の書き方で問題ない）。</li>
+                    <li><strong>意見箱の回答文（修正後）:</strong> 「描いた位置図そのもの（線・点・注記）は操作のたびに端末内に自動保存されるため消えません。以前は「地図を写真に保存」した直後の画像を端末内に保存する処理が漏れており、その画像を保存する前に別アプリ（カメラ等）を起動してブラウザが再起動されると、その画像だけが失われることがありました。Phase 6.45でこの保存漏れを修正済みです。」</li>
+                </ul>
+            </li>
         </ul>
 
         <h4>5.7 ズームレベル数値の表示位置（Phase 6.05）</h4>
@@ -1501,6 +1509,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.42完了・実機確認待ち】</strong>意見箱の要望対応：諸元「被災場所」に、位置図のメインの点から国土地理院の逆ジオコーディングAPIで市区町村名・町名を取得して入力するボタンを追加（鹿児島県内のみ市区町村名まで対応。県外は町名のみ）。詳細は5.48参照。</li>
             <li><strong>【Phase 6.43完了・実機確認待ち】</strong>上記ボタンの表記を「📍地図から取得」から「位置図から反映」に変更（反映はボタンを押した時だけで、位置図に点を置いただけでは自動更新されない挙動はPhase 6.42から変更なし）。詳細は5.48参照。</li>
             <li><strong>【Phase 6.44完了・実機確認待ち】</strong>「位置図から反映」ボタンが画面外にはみ出し、被災場所inputも極端に狭くなっていたレイアウト崩れを修正（横並びflexをやめ、input→ボタンの縦積みに変更）。詳細は5.48参照。</li>
+            <li><strong>【Phase 6.45完了・実機確認待ち】</strong>「地図を写真に保存」captureToPhoto()にIndexedDB同期（photoStorage.syncAll）漏れがあり、同期前に別アプリ（カメラ等）へ切替＝ブラウザ再起動されると画像が失われる不具合を修正。実機で「地図を写真に保存」直後にカメラアプリを起動→本アプリへ戻り、画像が残っていることを確認する必要あり。詳細は5.8参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
@@ -4891,6 +4900,12 @@ window.mapApp = {
 
         window.photoApp.photos.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.8), memo: `地図メモ`, tag: "地図メモ" });
         window.photoApp.currentIndex = window.photoApp.photos.length - 1;
+        // 【Phase 6.45修正】カメラ撮影・ファイル選択の追加処理と同様、追加直後にIndexedDBへ同期する。
+        // 従来はここでの同期処理が抜けており、JSメモリ上にしか実体が無い状態が
+        // 「現場保存」等でcommitCurrentToSite()が呼ばれるまで続いていた。そのため、
+        // 別アプリ（カメラ等）へ切り替えてブラウザがバックグラウンドで再起動されると、
+        // まだ同期されていないこの画像だけが失われる不具合があった。
+        window.photoStorage && window.photoStorage.syncAll(window.photoApp.photos);
         photoApp.render();
         photoApp.updateHeaderSummary();
         if (window.uiHelper) uiHelper.showToast("地図を写真に追加しました"); else alert("写真に追加しました");
