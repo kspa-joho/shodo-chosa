@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.45)</title>
+    <title>被災状況調査アプリ (Phase 6.46)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -468,14 +468,19 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- 諸元 -->
     <div class="accordion-item" data-group="base-info">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">諸元</span><span class="summary-text empty">未入力</span></div>
+            <div class="header-label"><span class="main-title">諸元</span><span id="tab-disaster-no" style="color:#2980b9; font-weight:bold; margin-left:6px;"></span><span class="summary-text empty">未入力</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <!-- 【Phase 6.38】整理番号・調査日・災害番号を管理タブ（旧・管理項目→共通項目）から移設。
                  現場ごとに異なる項目のため、諸元側に置く。id="default-date"（新規現場作成時の
                  当日日付自動入力）・oninput="syncDisasterNoTab(...)"（災害番号タブへの同期表示）は
-                 従来どおり維持している。 -->
+                 従来どおり維持している。
+                 【Phase 6.46修正】syncDisasterNoTab()が参照するid="tab-disaster-no"の要素が、
+                 旧タブ型UI時代の名残で現在のHTMLのどこにも存在しておらず、災害番号を入力しても
+                 どこにも反映されない状態になっていた（「諸元」の横に出ていたはずの表示が消えていた
+                 不具合）。「諸元」の見出し内に同じidで要素を復活させ、本来の「諸元の横に青字で
+                 現在の災害番号を表示する」挙動に戻した。 -->
             <button type="button" class="btn-sub" style="margin-bottom:10px; background:#8e44ad;"
                 onclick="siteManager.openReferenceModal()">📋 他の現場から引用</button>
             <div class="input-group"><label>整理番号</label><input type="text" name="ref_no"></div>
@@ -708,12 +713,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.45</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.46</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.45</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.46</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -732,8 +737,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.45)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.45（意見箱指摘「別アプリ（カメラ）起動で位置図画像が消える」の真因を修正。「地図を写真に保存」captureToPhoto()にIndexedDBへの同期呼び出し（photoStorage.syncAll）が漏れていたため、同期前に別アプリへ切替＝ブラウザ再起動されるとその画像だけが失われていた。カメラ撮影・ファイル選択と同様の同期呼び出しを追加して解消。詳細は5.8参照）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.46)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.46（①災害番号を入力しても「諸元」の横に反映されない不具合を修正。syncDisasterNoTab()が参照するid="tab-disaster-no"の要素が旧タブUI時代の名残でHTML上から既に削除されており、何も表示されずnullチェックで静かに終わっていた。「諸元」見出しに同idの要素を復活させて解消（詳細5.9）。②白紙メモの線編集時、✂️・🗑の浮動ツールバーが折れ点に重なり操作を妨げる不具合を修正。線要素編集時のみツールバー位置をキャンバス右上固定に変更（詳細5.49）。）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -770,8 +775,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <tr><td><code>spec.html</code></td><td>開発仕様書</td><td>本ファイル（開発タブの「開発ログ」に埋め込み）</td></tr>
             <tr><td><code>install_guide.html</code></td><td>インストール手順</td><td>iPhone/Android向けPWA追加手順・統合管理版DLリンク（β版リポジトリ）</td></tr>
             <tr><td><code>jzip_spec.html</code></td><td>JZIP連携仕様書</td><td>AppAとAppBの連携仕様を定義する共通ドキュメント。build.jsには組み込まない。両スレッドに毎回渡す。</td></tr>
-            <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>【Phase 6.33更新】5.43参照（背景画像機能を追加。setBackgroundFromFile／clearBackground／drawBackground。LocalStorage・IndexedDBには保存しない）。【Phase 6.27更新】ペン色を12色プルダウン(#sketch-color-select)で選択（setColorがプルダウンと同期。start()でプルダウン値とペン色の食い違いを解消）。Canvas描画（ペン/直線/文字/編集/Undo）</td></tr>
-            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.44更新】5.48参照（「被災場所」の「位置図から反映」ボタンのレイアウト崩れ修正。inputとボタンをdisplay:flexで横並びにしていたためボタンが画面外へはみ出していた不具合を、縦積みレイアウトに変更して解消）。【Phase 6.43更新】5.48参照（「被災場所」横のボタン名を「📍地図から取得」→「位置図から反映」に変更。onclickは変更なし）。【Phase 6.42更新】5.48参照（諸元「被災場所」inputの横に「位置図から反映」ボタンを追加。onclick="mapApp.reverseGeocodeLocation()"）。【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
+            <tr><td><code>1_script_sketch.js</code></td><td>白紙メモ</td><td>【Phase 6.46更新】5.49参照（線要素編集時のみ、浮動ツールバー#sketch-text-toolbarの位置を要素のbounding box左上ではなくキャンバス右上固定（top:8px; right:8px）に変更。折れ点とツールバーが重なり操作を妨げる不具合を修正。文字要素選択時の位置は変更なし）。【Phase 6.33更新】5.43参照（背景画像機能を追加。setBackgroundFromFile／clearBackground／drawBackground。LocalStorage・IndexedDBには保存しない）。【Phase 6.27更新】ペン色を12色プルダウン(#sketch-color-select)で選択（setColorがプルダウンと同期。start()でプルダウン値とペン色の食い違いを解消）。Canvas描画（ペン/直線/文字/編集/Undo）</td></tr>
+            <tr><td><code>introduction.html</code></td><td>現地調査タブUI</td><td>【Phase 6.46更新】5.9参照（syncDisasterNoTab()の参照先id="tab-disaster-no"が現在のHTMLのどこにも存在せず、災害番号を入力しても反映先が無い状態だった不具合を修正。「諸元」見出しのmain-title直後に同idの要素を復活させ、値がある時だけ青字表示する挙動に戻した）。【Phase 6.44更新】5.48参照（「被災場所」の「位置図から反映」ボタンのレイアウト崩れ修正。inputとボタンをdisplay:flexで横並びにしていたためボタンが画面外へはみ出していた不具合を、縦積みレイアウトに変更して解消）。【Phase 6.43更新】5.48参照（「被災場所」横のボタン名を「📍地図から取得」→「位置図から反映」に変更。onclickは変更なし）。【Phase 6.42更新】5.48参照（諸元「被災場所」inputの横に「位置図から反映」ボタンを追加。onclick="mapApp.reverseGeocodeLocation()"）。【Phase 6.41更新】5.47参照（写真順入れ替えボタンの表記を「▲▼」のみから、▲と▼の間に「写真順入れ替え」ラベルを挟んだ表記に修正。#photo-reorder-controlsのレイアウトをinline-flexに変更）。【Phase 6.40更新】5.47参照（写真タブのナビゲーション行（前の写真／次の写真）の右に、写真順入れ替え用の▲▼ボタン（#photo-reorder-controls内、#photo-move-up／#photo-move-down）を追加。表示・有効状態はphotoApp.render()側で制御）。【Phase 6.39更新】5.46参照（諸元「他の現場から引用」モーダルの選択肢を、①保存済みの初期値を引用を撤去した2択（①最後の現場を引用／②他の現場を指定して引用）に変更。モーダルタイトルを「整理番号・調査日・災害番号・被災場所・路線河川名等を引用」に更新。「保存」アコーディオンの「日報用CSVエクスポート」ボタンを削除（管理タブのCSV出力と重複のため））。【Phase 6.38更新】5.45参照（諸元アコーディオンの先頭に整理番号・調査日（id="default-date"）・災害番号（oninput="syncDisasterNoTab"）を管理タブから移設。あわせて「📋 他現場から引用」ボタンと参照モーダル一式（同じ要素IDのまま）を管理タブから移設し、引き継ぐ項目を整理番号・調査日・災害番号の3項目に変更）。【Phase 6.37更新】5.44のKMLボタン行に「KMLへ移動」を追加、文言を「KML背景表示」「KMLへ移動」「背景KML削除」に統一。【Phase 6.36更新】5.44のKMLボタンの文言を指定通り「KMLを背景表示」「背景KMLを消す」に修正。【Phase 6.35更新】5.44のKMLボタンの文言を「調査範囲」限定の表現から中立的な表現に修正（一旦「KMLを読込（参考表示）」「KML表示を消す」としていたが、6.36でさらに指定の文言へ修正）。【Phase 6.34更新】地図コントロール（現在地／地図を写真に保存／全て消去）の下に、KML読込用の非表示file input（map-kml-input）とKML読込／消去ボタンの行を追加。【Phase 6.33更新】白紙メモのツールバーに「背景」ボタン群（📷背景・📁背景・🗑背景）と、そのための非表示file input（sketch-bg-camera-input／sketch-bg-file-input）を追加。【Phase 6.27更新】白紙メモの色ボタン3つを12色プルダウンに置換。位置図（3モード＋白紙メモ）・諸元・被災状況・被災拡大・特記事項・写真・保存（上書き保存／別名保存）</td></tr>
             <tr><td><code>1_script_map.js</code></td><td>地図管理</td><td>【Phase 6.45更新】5.8参照（captureToPhoto()に、photoApp.photos.push()直後のwindow.photoStorage.syncAll(window.photoApp.photos)呼び出しを追加。カメラ撮影・ファイル選択の追加処理と異なりIndexedDBへの同期が漏れており、「地図を写真に保存」直後に別アプリへ切替＝ブラウザがバックグラウンド再起動されるとその画像だけが失われる不具合の修正）。【Phase 6.42更新】5.48参照（mapApp._getMainLatLng()・mapApp.KAGOSHIMA_MUNI_NAMES（鹿児島県内市区町村コード→名称の対応表）・mapApp.reverseGeocodeLocation()を追加。メインの点の位置を国土地理院APIへ渡し、返ってきた市区町村コード・町名から諸元「被災場所」を自動入力する）。【Phase 6.37更新】5.44参照（「KMLへ移動」(zoomToKml)を追加。KMLレイヤーの生成をL.layerGroupからL.featureGroupに変更し、getBounds()が無く範囲取得(fitBounds)が常に失敗していたバグを修正）。【Phase 6.35更新】5.44のトースト文言を用途限定しない表現に修正。【Phase 6.34更新】5.44参照（任意のKMLを参考レイヤとして読込表示。用途は限定しない。loadKmlFile／_buildKmlLayer／clearKml。allDrawnItemsとは別レイヤーで保存・地図の写真保存の対象外）。【Phase 6.32更新】5.42参照（編集中の要素を単体削除する「単要素削除」ボタンを追加）。【Phase 6.31更新】5.41参照（編集を「選択してから編集」の3段階に変更・範囲(Polygon)の途中完了を修正）。【Phase 6.30更新】5.40参照（操作パネルを地図下へ・アイコン1.5倍・編集のメイン/サブ分離・連続線修正・点の現在地/画面タップ選択）。【Phase 6.26更新】描画ツールバーを地図枠外の上部バー(#map-draw-bar)へ移すmapApp._moveDrawControlOutside()を追加。【Phase 6.24更新】Leaflet初期化・描画・モード切替・地図画像化・GPS修正モード。maxZoom:25（オーバーズーム対応）。中心の十字線（_addCrosshair）・メイン〇のマーク（createMainMark。ピクセル指定のL.circleMarker。サイズ定数MAIN_MARK_RADIUS_PX／MAIN_MARK_WEIGHT）</td></tr>
             <tr><td><code>2_script_photo.js</code></td><td>写真管理・センサー</td><td>【Phase 6.41更新】renderReorderControls()内、#photo-reorder-controlsの表示スタイルをinline-blockからinline-flexに変更（ラベル追加に伴うレイアウト調整）。5.47参照。【Phase 6.40更新】5.47参照（render()から新設のrenderReorderControls()を呼び、写真順入れ替え▲▼ボタン（#photo-reorder-controls）の表示・無効化状態を更新。並び替え本体のmove()自体は既存のまま変更なし）。【Phase 6.29更新】photoApp.recordAzimuth()を、値が届くまで最大4秒待つ作りに変更（azimuthManager.waitForAzimuth追加）。5.39参照。【Phase 6.28更新】写真アコーディオンを開いたときのGPS・方位センサー起動フックを、白紙メモと同じ「少し待ってから開いている状態を見る」作りに修正（5.38参照）。photoStorage(IndexedDB) + gpsManager + azimuthManager + photoApp（GPS修正フロー含む）</td></tr>
             <tr><td><code>3_script_main.js</code></td><td>制御・入出力</td><td>【Phase 6.39更新】5.46参照（諸元の参照ボタンの引き継ぎ項目にloc_name・route_nameを追加。applyReferenceFromDefaults（①保存済みの初期値を引用）は、対象項目がいずれも現場ごとに異なる値のため意味を成さなくなり削除。呼び出し元のUIボタンも削除）。【Phase 6.38更新】5.45参照（諸元へ移設した参照ボタンに合わせ、applyReferenceFromDefaults／_applyReferenceFromSiteRecord／_applyReferenceFieldsの引き継ぎ項目をdisaster_no・ref_no・survey_dateに変更（dept_name・damage_dateは除外）。loadDefaultsの反映対象にdept_nameを追加し、「初期値の読み込み」で発注者名も反映されるよう修正）。【Phase 6.27更新】renderDefaultsViewの「被災日」行を「調査日（新規作成時：当日の日付を自動入力）」行に置換。【Phase 6.25更新】UIヘルパー・オートセーブ・JZIP入出力（EXIF書き込み含む）・CSV出力（exportCSV／_csvRow／_coordsFromMainGeom／_downloadCSV。チェックした現場の保存済みデータから1現場1行）・siteManager（promptCreateSiteは保存確認→現場名入力の順・confirmAndProceedは未保存の変更がある場合のみモーダル表示・現場一覧のチェック状態の引き継ぎ・_resetControlToDefault/_resetSiteInputsによる設定を巻き込まないリセット・renameSite）・更新確認・mapCacheManager・saveDefaults/loadDefaults/renderDefaultsView（保存済み初期値の一覧表示）・clearAll・toggleFullWidth・syncDeptName/syncDisasterNoTab</td></tr>
@@ -1441,6 +1446,14 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li>未入力のときは何も表示しない。</li>
             <li>タブボタンの横幅・「管理」「開発」タブの表示は変更しない。</li>
             <li>管理タブの災害番号inputのoninputで<code>syncDisasterNoTab()</code>を呼び即時反映。storageManager.load()での復元時にも同期する。</li>
+            <li><strong>【Phase 6.46修正】表示先の要素が消滅していた不具合:</strong> 元々は「現地調査」タブボタン自体の下段に<code>id="tab-disaster-no"</code>のラベルを置いていたが（本節）、その後のアコーディオンUIへの全面移行（Phase 6.x）やPhase 6.38の管理タブ再編の際に、このid要素自体がどのHTMLからも削除された。一方<code>syncDisasterNoTab(val)</code>（3_script_main.js）やその呼び出し元（災害番号inputのoninput・現場切替・JZIP読込・storageManager.load()での復元等）は削除されずそのまま残っており、<code>document.getElementById('tab-disaster-no')</code>がnullを返して何もせず終了する（<code>if (!label) return;</code>）ため、エラーも出ないまま「災害番号を入力しても画面上どこにも反映されない」状態がずっと続いていた。意見箱での指摘を受けて発見。対応として、現在のUIで最も意味が通る場所である「諸元」アコーディオンの見出し（<code>introduction.html</code>、main-titleの直後）に同じidの要素を復活させ、本来の「値がある時だけ青字で表示・無ければ何も表示しない」という挙動に戻した。詳細は5.48直後に追記。</li>
+        </ul>
+
+        <h4>5.49 白紙メモ・編集モードの浮動ツールバーが折れ点に重なる不具合（Phase 6.46）</h4>
+        <ul>
+            <li><strong>報告内容:</strong> 白紙メモで線を編集するとき、✂️（この点だけ削除）・🗑（要素ごと削除）の浮動ツールバー（<code>#sketch-text-toolbar</code>）が折れ点の近くに表示され、ボタンが邪魔でその折れ点をクリック・ドラッグ操作できない場合がある。</li>
+            <li><strong>原因:</strong> <code>updateFloatingToolbar()</code>（1_script_sketch.js）は、文字要素・線要素のどちらでも「要素のbounding box（外枠）の左上」にツールバーを置いていた。文字要素はそれで概ね問題ないが、線要素の場合、まさに今つまんでいる折れ点がそのbounding boxの左上（＝最小x・最小y）に位置することが多く、ツールバーがその頂点の真上に重なって操作を妨げていた。</li>
+            <li><strong>修正内容:</strong> 線要素を編集中（<code>isText===false</code>）の場合のみ、ツールバーの位置を要素の形状に依存しない固定位置（キャンバス右上、<code>top:8px; right:8px</code>）に変更した。連続線描画中に表示する完了・中止ボタン（<code>#sketch-line-toolbar</code>）と同じ考え方で、頂点の位置に関わらず常に操作の邪魔にならない。文字要素選択時（<code>isText===true</code>）の挙動（選択中の文字の直上に表示）は変更していない。</li>
         </ul>
     </div>
 
@@ -1510,6 +1523,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.43完了・実機確認待ち】</strong>上記ボタンの表記を「📍地図から取得」から「位置図から反映」に変更（反映はボタンを押した時だけで、位置図に点を置いただけでは自動更新されない挙動はPhase 6.42から変更なし）。詳細は5.48参照。</li>
             <li><strong>【Phase 6.44完了・実機確認待ち】</strong>「位置図から反映」ボタンが画面外にはみ出し、被災場所inputも極端に狭くなっていたレイアウト崩れを修正（横並びflexをやめ、input→ボタンの縦積みに変更）。詳細は5.48参照。</li>
             <li><strong>【Phase 6.45完了・実機確認待ち】</strong>「地図を写真に保存」captureToPhoto()にIndexedDB同期（photoStorage.syncAll）漏れがあり、同期前に別アプリ（カメラ等）へ切替＝ブラウザ再起動されると画像が失われる不具合を修正。実機で「地図を写真に保存」直後にカメラアプリを起動→本アプリへ戻り、画像が残っていることを確認する必要あり。詳細は5.8参照。</li>
+            <li><strong>【Phase 6.46完了・実機確認待ち】</strong>①災害番号を入力しても「諸元」の横に表示されない不具合を修正（id="tab-disaster-no"要素の復活）。実機で災害番号入力時に「諸元」見出し横へ即時反映されること、他現場から引用時・JZIP読込時にも反映されることを確認する必要あり。②白紙メモの線編集時、✂️・🗑ツールバーが折れ点に重なる不具合を修正（ツールバー位置をキャンバス右上固定に変更）。実機で折れ点のクリック・ドラッグがツールバーに妨げられないこと、文字要素の編集時の表示位置は従来通りであることを確認する必要あり。詳細は5.9・5.49参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
@@ -5454,15 +5468,22 @@ window.sketchApp = {
         if (ed) ed.style.display = isText ? 'inline-block' : 'none';
         if (dp) dp.style.display = isLinePoint ? 'inline-block' : 'none';
 
-        let b;
+        // 【Phase 6.46修正】線の頂点編集時は、従来「線の外枠（bounding box）の左上」に
+        // ツールバーを出していたが、折れ点がその左上付近にあることが多く、✂️・🗑ボタンが
+        // 触りたい頂点の真上に重なって、頂点のクリック・ドラッグ操作を妨げる不具合があった。
+        // 連続線描画中の完了・中止ボタン（#sketch-line-toolbar）と同じく、キャンバス右上の
+        // 固定位置に出すことで、頂点の位置に関係なく常に操作を邪魔しないようにした。
+        // 文字要素（isText）は、選択中の文字の真上に出す従来の挙動のまま変更していない。
         if (isText) {
-            b = this.getTextBounds(el);
+            const b = this.getTextBounds(el);
+            toolbar.style.right = 'auto';
+            toolbar.style.left = Math.max(0, b.x) + 'px';
+            toolbar.style.top = Math.max(0, b.y - 40) + 'px';
         } else {
-            const xs = el.points.map(p => p.x), ys = el.points.map(p => p.y);
-            b = { x: Math.min(...xs), y: Math.min(...ys) };
+            toolbar.style.left = 'auto';
+            toolbar.style.right = '8px';
+            toolbar.style.top = '8px';
         }
-        toolbar.style.left = Math.max(0, b.x) + 'px';
-        toolbar.style.top = Math.max(0, b.y - 40) + 'px';
         toolbar.style.display = 'flex';
     },
     hideFloatingToolbar() {
