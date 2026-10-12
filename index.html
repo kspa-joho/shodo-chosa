@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.47)</title>
+    <title>被災状況調査アプリ (Phase 6.49)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -428,16 +428,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
                     <div class="sketch-tool-group">
                         <button class="sketch-btn" onclick="sketchApp.undo()">戻る</button>
                     </div>
-                </div>
-                <div class="sketch-canvas-container">
-                    <canvas id="sketch-canvas" class="sketch-canvas"></canvas>
-                    <!-- 文字要素を選択中に表示する浮動ツールバー（回転・編集・削除） -->
-                    <!-- 連続線を描いている間だけ表示する完了・中止ボタン -->
-                    <div id="sketch-line-toolbar" style="display:none; position:absolute; top:8px; right:8px; background:white; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.3); padding:6px; gap:6px; z-index:50; align-items:center;">
-                        <button type="button" class="btn-sub" style="width:auto; padding:4px 10px; font-size:0.8rem; background:#e74c3c;" onclick="sketchApp.cancelPolyline()">中止</button>
-                        <button type="button" class="btn-main" style="width:auto; padding:4px 10px; font-size:0.8rem;" onclick="sketchApp.finishPolyline()">完了</button>
-                    </div>
-                    <div id="sketch-text-toolbar" style="display:none; position:absolute; background:white; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.3); padding:4px 8px; gap:6px; z-index:50; align-items:center;">
+                    <!-- 【Phase 6.49】文字・線要素を選択中に表示する編集ツールバー（回転・編集・頂点追加・削除）。
+                         以前はキャンバスの内側（右上固定）→直下（外側）と試したが、要素やその下の
+                         「全消去」「写真に保存」ボタンに重なる問題が残っていた。ツールバー行
+                         （.sketch-toolbar）自体の、色選択・戻るボタンの右に空いている余白を使えば
+                         キャンバスにも他のボタンにも一切重ならないため、ここに静的配置する。 -->
+                    <div id="sketch-text-toolbar" class="sketch-tool-group" style="display:none; margin-left:auto; gap:6px; align-items:center;">
                         <button id="sk-tb-rotate-l" type="button" onclick="sketchApp.rotateSelected(-15)" style="border:none;background:none;font-size:1.1rem;cursor:pointer;">↺</button>
                         <button id="sk-tb-rotate-r" type="button" onclick="sketchApp.rotateSelected(15)" style="border:none;background:none;font-size:1.1rem;cursor:pointer;">↻</button>
                         <button id="sk-tb-edit" type="button" onclick="sketchApp.editSelectedText()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;">✏️</button>
@@ -445,6 +441,14 @@ canvas.sketch-canvas { display: block; width: 100%; }
                         <button id="sk-tb-addpoint" type="button" onclick="sketchApp.enterInsertPointMode()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;" title="この線に点を追加">➕</button>
                         <button id="sk-tb-delpoint" type="button" onclick="sketchApp.deleteSelectedPoint()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;" title="この点だけ削除">✂️</button>
                         <button id="sk-tb-delete" type="button" onclick="sketchApp.deleteSelected()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;" title="要素ごと削除">🗑</button>
+                    </div>
+                </div>
+                <div class="sketch-canvas-container">
+                    <canvas id="sketch-canvas" class="sketch-canvas"></canvas>
+                    <!-- 連続線を描いている間だけ表示する完了・中止ボタン -->
+                    <div id="sketch-line-toolbar" style="display:none; position:absolute; top:8px; right:8px; background:white; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.3); padding:6px; gap:6px; z-index:50; align-items:center;">
+                        <button type="button" class="btn-sub" style="width:auto; padding:4px 10px; font-size:0.8rem; background:#e74c3c;" onclick="sketchApp.cancelPolyline()">中止</button>
+                        <button type="button" class="btn-main" style="width:auto; padding:4px 10px; font-size:0.8rem;" onclick="sketchApp.finishPolyline()">完了</button>
                     </div>
                 </div>
                 <!-- 文字入力モーダル（複数行対応。従来のprompt()に代わるもの） -->
@@ -715,12 +719,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.47</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.49</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.47</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.49</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -739,8 +743,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.47)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.47（白紙メモの編集モードに、既存の線へ頂点を追加する機能を追加。浮動ツールバーの✂️の左に「➕」ボタンを設け、押した直後の1タップだけ、タップ位置に最も近いセグメントへ新しい頂点を挿入する。線から離れた場所をタップした場合は追加せずトーストで案内。詳細5.50）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.49)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.49（白紙メモの編集モードで出る浮動ツールバー（✏️➕✂️🗑等）の置き場所を再修正。Phase 6.48でキャンバス直下（外側）に出す方式にしたが、今度はその下の「全消去」「写真に保存」ボタンと重なる余地が残っていた。ツールバーをキャンバス内の絶対配置から、ツールバー行（色選択・戻るボタンの右の余白）内の静的配置に変更し、キャンバスにも他のボタンにも一切重ならないようにした。詳細5.52）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -1474,6 +1478,29 @@ canvas.sketch-canvas { display: block; width: 100%; }
             </li>
             <li><strong>実機確認が必要な点:</strong> 「➕」を押した直後の1タップで、意図した位置の近くのセグメントに頂点が追加されること。線から離れた場所をタップした場合に何も追加されずトーストが出ること。追加直後にそのままドラッグで位置調整できること。✂️・🗑ボタンの表示条件・挙動に影響していないこと。</li>
         </ul>
+
+        <h4>5.51 白紙メモ・浮動ツールバーをキャンバス外に完全に出す（Phase 6.48）</h4>
+        <ul>
+            <li><strong>報告内容:</strong> Phase 6.46で線編集時の浮動ツールバー（<code>#sketch-text-toolbar</code>）をキャンバス右上の固定位置（<code>top:8px; right:8px</code>）に変更したが、文字要素・線要素自体がキャンバス右上付近にあるときは、ツールバーがその要素に重なってしまい、依然として邪魔になる場合がある。要素の位置に関わらず常に重ならないよう、キャンバスの内側ではなく完全に外側に出してほしいという要望。</li>
+            <li><strong>原因:</strong> <code>updateFloatingToolbar()</code>（1_script_sketch.js）は、Phase 6.46の修正後も「キャンバスの内側」に位置を固定していただけで、キャンバス自体の外には出していなかった。文字要素編集時（<code>isText===true</code>）は従来どおり選択中の文字の直上（キャンバス内）に表示する挙動のままだった。</li>
+            <li><strong>修正内容:</strong> 文字要素・線要素のどちらを編集中かに関わらず、ツールバーを<code>.sketch-canvas-container</code>（<code>position:relative</code>）の直下、つまりキャンバスの外側（<code>top:100%</code>・左右中央・<code>margin-top:6px</code>）に固定表示するよう統一した。これにより、選択中の要素がキャンバスのどこにあっても、ツールバーがその要素やキャンバスの描画内容に重なることがなくなる。</li>
+            <li><strong>影響:</strong> ツールバー表示中に、キャンバス直下にある「全消去」「写真に保存」ボタン行と視覚的に重なる場合がある（絶対配置のため、通常のレイアウトは押し出さない）。実害（誤操作）は小さいと判断したが、気になる場合は追ってツールバー分のスペースを確保するレイアウトに変更する。</li>
+            <li><strong>実機確認が必要な点:</strong> 文字要素・線要素のどちらを選択してもツールバーがキャンバスの直下（外側）に表示され、選択中の要素と重ならないこと。✂️・➕・🗑・✏️・↺・↻の各ボタンの表示条件・動作に変化がないこと。</li>
+        </ul>
+
+        <h4>5.52 白紙メモ・浮動ツールバーをツールバー行の余白に静的配置（Phase 6.49）</h4>
+        <ul>
+            <li><strong>報告内容:</strong> Phase 6.48でツールバーをキャンバスの直下（外側）に固定表示する方式にしたところ、今度はその下にある「全消去」「写真に保存」ボタンの行と視覚的に重なる場合があった。ユーザーから、ツールバー行（.sketch-toolbar）の「赤」色選択・「戻る」ボタンの右に元々空いている余白を使えばよいのではという提案があった。</li>
+            <li><strong>原因:</strong> Phase 6.46〜6.48はいずれも、ツールバー（<code>#sketch-text-toolbar</code>）を<code>.sketch-canvas-container</code>内の絶対配置（<code>position:absolute</code>）のまま、位置だけを内側→直下（外側）と調整する対応だった。絶対配置である以上、キャンバスやその周辺の要素のどこかと重なる可能性を完全には消せなかった。</li>
+            <li><strong>修正内容:</strong>
+                <ul>
+                    <li><strong>introduction.html:</strong> <code>#sketch-text-toolbar</code>を<code>.sketch-canvas-container</code>内から、ツールバー行（<code>.sketch-toolbar</code>）内の「戻る」ボタンのグループの直後へ移動した。<code>class="sketch-tool-group"</code>を付け、<code>position:absolute</code>等の絶対配置指定を削除し、<code>margin-left:auto</code>でツールバー行の右端（色選択・戻るボタンの右の余白）に寄せる、通常のレイアウト（静的配置）に変更した。ボタンの中身（↺↻✏️➕✂️🗑）・id・onclickは変更していない。</li>
+                    <li><strong>1_script_sketch.js:</strong> <code>updateFloatingToolbar()</code>から、<code>toolbar.style.left/right/top/transform/marginTop</code>を計算・設定する処理（Phase 6.46〜6.48で追加した分）を削除し、<code>display:flex</code>の切り替えのみ残した。位置はHTML側の通常のレイアウトに委ねる。<code>getTextBounds(el)</code>を使った文字要素向けの位置計算も不要になったため削除した。</li>
+                </ul>
+            </li>
+            <li><strong>影響:</strong> ツールバーが常にツールバー行（画面上部）に固定され、選択中の要素の近くには出なくなった。位置が一定になったことで、毎回どこを見ればよいか分かりやすくなる一方、選択した要素から視線移動の距離がやや遠くなる。</li>
+            <li><strong>実機確認が必要な点:</strong> 文字要素・線要素のどちらを選択してもツールバーが色選択・戻るボタンの右の余白に表示され、キャンバスにも「全消去」「写真に保存」ボタンにも重ならないこと。狭い画面幅（スマートフォン等）で、ツールバーの6個のボタンが折り返さずに収まること、または折り返した場合でもレイアウトが崩れないこと。</li>
+        </ul>
     </div>
 
     <div class="spec-section">
@@ -1544,6 +1571,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.45完了・実機確認待ち】</strong>「地図を写真に保存」captureToPhoto()にIndexedDB同期（photoStorage.syncAll）漏れがあり、同期前に別アプリ（カメラ等）へ切替＝ブラウザ再起動されると画像が失われる不具合を修正。実機で「地図を写真に保存」直後にカメラアプリを起動→本アプリへ戻り、画像が残っていることを確認する必要あり。詳細は5.8参照。</li>
             <li><strong>【Phase 6.46完了・実機確認待ち】</strong>①災害番号を入力しても「諸元」の横に表示されない不具合を修正（id="tab-disaster-no"要素の復活）。実機で災害番号入力時に「諸元」見出し横へ即時反映されること、他現場から引用時・JZIP読込時にも反映されることを確認する必要あり。なお、この表示は入力時・現場切替時等にsyncDisasterNoTab()が呼ばれて初めて更新される仕様のため、既存データを開いた直後は画面を一度操作（再読込・現場切替等）するまで表示が追いつかない場合がある。②白紙メモの線編集時、✂️・🗑ツールバーが折れ点に重なる不具合を修正（ツールバー位置をキャンバス右上固定に変更）。実機で折れ点のクリック・ドラッグがツールバーに妨げられないこと、文字要素の編集時の表示位置は従来通りであることを確認する必要あり。詳細は5.9・5.49参照。</li>
             <li><strong>【Phase 6.47完了・実機確認待ち】</strong>白紙メモの編集モードに、既存の線へ頂点を追加する「➕」ボタンを追加。実機で、➕を押した直後の1タップで意図した位置に頂点が追加されること、線から離れた場所をタップした場合は追加されずトーストが出ること、追加直後にそのままドラッグで微調整できることを確認する必要あり。詳細は5.50参照。</li>
+            <li><strong>【Phase 6.48完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバス内の固定位置（右上）からキャンバスの直下（完全に外側）へ移動。詳細は5.51参照（Phase 6.49でさらに変更済み）。</li>
+            <li><strong>【Phase 6.49完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバスの直下（絶対配置）から、ツールバー行（色選択・戻るボタンの右の余白）内の静的配置へ変更。実機で、文字要素・線要素のどちらを選んでもツールバーがその余白に表示され、キャンバス・他のボタンのどちらにも重ならないこと、狭い画面幅でもレイアウトが崩れないことを確認する必要あり。詳細は5.52参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
@@ -5532,17 +5561,15 @@ window.sketchApp = {
         // 触りたい頂点の真上に重なって、頂点のクリック・ドラッグ操作を妨げる不具合があった。
         // 連続線描画中の完了・中止ボタン（#sketch-line-toolbar）と同じく、キャンバス右上の
         // 固定位置に出すことで、頂点の位置に関係なく常に操作を邪魔しないようにした。
-        // 文字要素（isText）は、選択中の文字の真上に出す従来の挙動のまま変更していない。
-        if (isText) {
-            const b = this.getTextBounds(el);
-            toolbar.style.right = 'auto';
-            toolbar.style.left = Math.max(0, b.x) + 'px';
-            toolbar.style.top = Math.max(0, b.y - 40) + 'px';
-        } else {
-            toolbar.style.left = 'auto';
-            toolbar.style.right = '8px';
-            toolbar.style.top = '8px';
-        }
+        // 【Phase 6.48修正】しかし文字・線要素自体がキャンバス右上付近にあるときは、固定位置の
+        // ツールバーがその要素と重なってしまう不具合が残っていた。そこでキャンバスの直下
+        // （外側）に固定表示する方式に変更したが、キャンバス下の「全消去」「写真に保存」
+        // ボタンと重なる場合があった。
+        // 【Phase 6.49修正】introduction.html側で、ツールバー（#sketch-text-toolbar）を
+        // キャンバス内の絶対配置から、ツールバー行（.sketch-toolbar）内の静的配置（色選択・
+        // 戻るボタンの右の余白）へ移動した。これによりキャンバスにも他のボタンにも一切
+        // 重ならなくなったため、JS側で座標を計算・指定する処理は不要になった。
+        // ここでは表示・非表示の切り替えのみ行う（位置はCSS／HTML側の通常のレイアウトに任せる）。
         toolbar.style.display = 'flex';
     },
     hideFloatingToolbar() {
