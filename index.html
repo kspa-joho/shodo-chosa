@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>被災状況調査アプリ (Phase 6.50)</title>
+    <title>被災状況調査アプリ (Phase 6.53)</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -723,12 +723,12 @@ canvas.sketch-canvas { display: block; width: 100%; }
     <!-- アプリ更新 -->
     <div class="accordion-item" data-group="app-update">
         <button class="accordion-header">
-            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.50</span></div>
+            <div class="header-label"><span class="main-title">アプリ更新</span><span class="summary-text" id="current-version-display">Phase 6.53</span></div>
             <span class="icon">+</span>
         </button>
         <div class="accordion-content">
             <div style="padding: 10px; background: #e8f6f3; border: 1px solid #a2d9ce; border-radius: 4px;">
-                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.50</strong></p>
+                <p style="margin:0 0 10px 0; font-size:0.9rem;">現在のバージョン: <strong>Phase 6.53</strong></p>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button id="update-app-btn" type="button" class="btn-main" style="width:auto; padding:8px 16px;"
                         onclick="appControl.checkForUpdate()">更新を確認する</button>
@@ -747,8 +747,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.50)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.50（白紙メモ・連続線を描いている間に出る「中止」「完了」ボタン（#sketch-line-toolbar）も、Phase 6.49で編集用ツールバーに適用したのと同じ、ツールバー行の余白への静的配置に変更。キャンバス内の絶対配置（右上固定）をやめたことで、描いている線の終点が右上付近に来てもボタンと重ならなくなった。詳細5.53）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.53)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.53（一括ZIP出力の内部構成を「現場ごとのフォルダ」から「現場ごとの個別JZIP（.zip）をまとめて入れる、zip-of-zips」に変更。あわせてPhase 6.52でZIP生成時にcompression未指定（JSZip既定のSTORE＝無圧縮）だった不具合をDEFLATE指定で修正。詳細5.55、5.56）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -1519,6 +1519,15 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>表示の競合について:</strong> <code>#sketch-text-toolbar</code>（編集用）と<code>#sketch-line-toolbar</code>（連続線描画中用）は同じ余白（<code>margin-left:auto</code>）を使うが、連続線を描いている間は編集モードの要素選択状態ではないため、2つが同時に表示されることは無い。</li>
             <li><strong>実機確認が必要な点:</strong> 線ツールで連続線を描いている間、「中止」「完了」ボタンが色選択・戻るボタンの右の余白に表示され、描いている線のどの位置を終点にしてもボタンと重ならないこと。編集用ツールバー（✏️➕✂️🗑等）と表示が競合しないこと。</li>
         </ul>
+
+        <h4>5.54 一括ZIP出力：1件だけの包み込み省略と、既定ファイル名の変更（Phase 6.51）</h4>
+        <ul>
+            <li><strong>報告内容①:</strong> 現場管理の「JZIP出力」で「まとめて1つのZIPにする」にチェックが入っている状態で、選択した現場が1件だけの場合、わざわざ外側のZIPで包む意味がなく、受け取った側が余計に解凍する手間が増えるだけではないか、という指摘。</li>
+            <li><strong>修正内容①:</strong> <code>bulkExportSelected()</code>（3_script_main.js）に、選択件数が1件かつ「まとめて1つのZIPにする」チェックONの場合の分岐を追加した。この場合は外側のZIPを作らず、<code>exportSiteZip(checked[0])</code>を直接呼び、単体出力と全く同じ形（<code>_buildFn()</code>による構成のJZIPそのもの）で出力する。選択が2件以上の場合、または「まとめて1つのZIPにする」がOFFの場合（現場ごとに個別ZIPを連続ダウンロード）は従来どおり。</li>
+            <li><strong>報告内容②:</strong> 一括ZIP・一括CSV出力（選択が2件以上のとき）の既定ファイル名が<code>survey_sites_日付.zip/csv</code>という英語名になっており、過去にAIが確認なく決めた名前で、本調査（被災状況調査）の目的にそぐわないという指摘。</li>
+            <li><strong>修正内容②:</strong> <code>bulkExportSelected()</code>のZIP一括出力（<code>survey_sites_</code>部分）と、一括CSV出力（<code>_exportCheckedCSV</code>系処理、1052行目付近の<code>survey_sites_</code>部分）の両方を、<code>一括出力_日付.zip</code>／<code>一括出力_日付.csv</code>に変更した（ユーザー確認済みの名称）。選択が1件のみのCSV出力（<code>_buildFn()</code>を使う既存分岐）は変更していない。</li>
+            <li><strong>実機確認が必要な点:</strong> ZIP出力で、選択1件＋「まとめて1つのZIPにする」ONのとき、単体出力と同じ中身・ファイル名で出力され、フォルダに包まれていないこと。選択2件以上のときのZIP・CSVのファイル名が「一括出力_日付」になっていること。</li>
+        </ul>
     </div>
 
     <div class="spec-section">
@@ -1592,6 +1601,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.48完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバス内の固定位置（右上）からキャンバスの直下（完全に外側）へ移動。詳細は5.51参照（Phase 6.49でさらに変更済み）。</li>
             <li><strong>【Phase 6.49完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバスの直下（絶対配置）から、ツールバー行（色選択・戻るボタンの右の余白）内の静的配置へ変更。実機で、文字要素・線要素のどちらを選んでもツールバーがその余白に表示され、キャンバス・他のボタンのどちらにも重ならないこと、狭い画面幅でもレイアウトが崩れないことを確認する必要あり。詳細は5.52参照。</li>
             <li><strong>【Phase 6.50完了・実機確認待ち】</strong>白紙メモ・連続線描画中の「中止」「完了」ボタン（#sketch-line-toolbar）も、編集用ツールバーと同じツールバー行の余白への静的配置に変更。実機で、線を描いている間、ボタンが色選択・戻るボタンの右の余白に表示され、描いている線のどの位置を終点にしても重ならないこと、編集用ツールバーと表示が競合しないことを確認する必要あり。詳細は5.53参照。</li>
+            <li><strong>【Phase 6.51完了・実機確認待ち】</strong>一括ZIP出力で、選択1件＋「まとめて1つのZIPにする」ONのときは外側のZIPで包まず単体出力と同じ形にするよう変更。あわせて一括ZIP・一括CSVの既定ファイル名「survey_sites_日付」を「一括出力_日付」に変更。実機で、選択1件のときの出力が単体出力と同じ中身・ファイル名になっていること、選択2件以上のときのファイル名が「一括出力_日付」になっていることを確認する必要あり。詳細は5.54参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
@@ -7165,6 +7175,19 @@ window.siteManager = {
         target.file('survey_data.json', JSON.stringify(d, null, 2));
         return d;
     },
+    // 1現場ぶんのJZIP（単体出力と全く同じ中身・圧縮）をBlobとして組み立てる。
+    // exportSiteZip（単体出力）と一括出力（zip-of-zips）の両方から使う共通処理。
+    // 【Phase 6.53】一括出力を「フォルダ構成」から「zip-of-zips（各現場を個別のJZIPとして
+    // 作り、それをまとめて1つの外側ZIPに入れる）」に変更したのに伴い、exportSiteZipと
+    // 共有できるよう切り出した。
+    async _buildSiteZipBlob(siteId, site) {
+        const zip = new JSZip();
+        const d = await this._populateZipFolderForSite(zip, siteId, site);
+        // 【Phase 6.52】compressionを指定していなかったため、JSZipの既定（STORE＝無圧縮）で
+        // 格納されていた。拡張子は.zipでも中身が圧縮されていない状態だったため、DEFLATEを指定した。
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        return { blob, filename: this._buildFn(d) + '.zip' };
+    },
     async exportSiteZip(siteId) {
         if (siteId === this.getCurrentSiteId() && this.hasUnsavedChanges()) {
             alert('未保存の変更があります。先に「保存」タブ（現地調査）で保存してください。');
@@ -7172,12 +7195,10 @@ window.siteManager = {
         }
         const site = this.getSite(siteId);
         if (!site) return;
-        const zip = new JSZip();
-        const d = await this._populateZipFolderForSite(zip, siteId, site);
-        const blob = await zip.generateAsync({ type: 'blob' });
+        const { blob, filename } = await this._buildSiteZipBlob(siteId, site);
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = this._buildFn(d) + '.zip';
+        a.download = filename;
         a.click();
     },
 
@@ -7201,23 +7222,46 @@ window.siteManager = {
         const bundle = document.getElementById('bulk-export-bundle').checked;
         if (progress) { progress.style.display = 'block'; progress.textContent = '準備中...'; }
 
-        if (bundle) {
-            // 「まとめて1つのZIPにする」：外側のZIPの中に、現場ごとのフォルダを作る
+        if (bundle && checked.length === 1) {
+            // 【Phase 6.51】「まとめて1つのZIPにする」にチェックが入っていても、選択が1件だけ
+            // なら外側のZIPで包む意味がなく、受け取った側が余計に解凍する手間が増えるだけ。
+            // 1件のときは単体出力（exportSiteZip）と同じ形（中身がそのままのJZIP）で出す。
+            if (progress) progress.textContent = '出力中...';
+            await this.exportSiteZip(checked[0]);
+        } else if (bundle) {
+            // 【Phase 6.53】「まとめて1つのZIPにする」：従来は外側のZIPの中に現場ごとの
+            // 「フォルダ」（survey_data.json・photos/を直置き）を作る構成だったが、これだと
+            // 各現場が単体出力のJZIPと同じ形（1つの.zipファイル）にならず、取り回しの面でも
+            // 単体出力との一貫性が無かった。そこで、各現場をいったん単体出力と全く同じ形の
+            // 個別JZIP（.zip）としてメモリ上に作り、それを外側のZIPに「ファイルとして」
+            // 格納する「zip-of-zips」構成に変更した。外側ZIPを展開すると、現場の数だけ
+            // 単体出力と同じ.zipファイルが並ぶ状態になる。
             const outerZip = new JSZip();
+            const usedNames = new Set();
             for (let i = 0; i < checked.length; i++) {
                 const siteId = checked[i];
                 const site = this.getSite(siteId);
                 if (!site) continue;
                 if (progress) progress.textContent = `${i + 1}/${checked.length}件目を処理中：${site.siteName}`;
-                const folderName = (this._buildFn(site.formData || {}) || site.siteName || siteId) + '_' + siteId;
-                const folder = outerZip.folder(folderName);
-                await this._populateZipFolderForSite(folder, siteId, site);
+                const { blob: innerBlob, filename: innerName } = await this._buildSiteZipBlob(siteId, site);
+                // ファイル名構成（fn1〜5）が同じ現場同士で名前が衝突しないよう、
+                // 衝突する場合のみsiteIdを付け足して一意にする。
+                let finalName = innerName;
+                if (usedNames.has(finalName)) {
+                    finalName = finalName.replace(/\.zip$/, '') + '_' + siteId + '.zip';
+                }
+                usedNames.add(finalName);
+                outerZip.file(finalName, innerBlob);
             }
             if (progress) progress.textContent = '圧縮中...';
-            const blob = await outerZip.generateAsync({ type: 'blob' });
+            // 中身（内側の各.zip）は既にDEFLATE圧縮済みのバイナリのため、外側は圧縮してもほぼ
+            // 縮まない。無駄な再圧縮処理を避けるため、外側はSTORE（無圧縮）でまとめるだけにする。
+            const blob = await outerZip.generateAsync({ type: 'blob', compression: 'STORE' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `survey_sites_${new Date().toISOString().split('T')[0]}.zip`;
+            // 【Phase 6.51】「survey_sites」は本調査の目的にそぐわない英語名だったため、
+            // 「一括出力」に変更した（ユーザー確認済み）。
+            a.download = `一括出力_${new Date().toISOString().split('T')[0]}.zip`;
             a.click();
         } else {
             // オフ：現場ごとに個別のZIPを連続でダウンロードする。
@@ -7561,7 +7605,8 @@ window.appControl = {
         });
 
         zip.file("survey_data.json", JSON.stringify(d, null, 2));
-        zip.generateAsync({ type: "blob" }).then(blob => {
+        // 【Phase 6.52】同上。compressionを指定していなかったため無圧縮で格納されていた。
+        zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } }).then(blob => {
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = this.getFn() + ".zip";
@@ -7690,9 +7735,11 @@ window.appControl = {
         });
         if (rows.length === 0) { alert('出力できる現場がありませんでした'); return; }
         // 1現場だけなら従来と同じファイル名構成、複数現場なら日付入りの共通名にする
+        // 【Phase 6.51】「survey_sites」は本調査の目的にそぐわない英語名だったため、
+        // ZIP一括出力と同じく「一括出力」に変更した（ユーザー確認済み）。
         const filename = rows.length === 1
             ? sm._buildFn(firstData) + ".csv"
-            : `survey_sites_${new Date().toISOString().split('T')[0]}.csv`;
+            : `一括出力_${new Date().toISOString().split('T')[0]}.csv`;
         this._downloadCSV(rows, filename);
         window.uiHelper && uiHelper.showToast(`${rows.length}件の現場をCSV出力しました`);
     },
