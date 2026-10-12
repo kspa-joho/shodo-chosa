@@ -442,14 +442,18 @@ canvas.sketch-canvas { display: block; width: 100%; }
                         <button id="sk-tb-delpoint" type="button" onclick="sketchApp.deleteSelectedPoint()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;" title="この点だけ削除">✂️</button>
                         <button id="sk-tb-delete" type="button" onclick="sketchApp.deleteSelected()" style="border:none;background:none;font-size:1.1rem;cursor:pointer;" title="要素ごと削除">🗑</button>
                     </div>
-                </div>
-                <div class="sketch-canvas-container">
-                    <canvas id="sketch-canvas" class="sketch-canvas"></canvas>
-                    <!-- 連続線を描いている間だけ表示する完了・中止ボタン -->
-                    <div id="sketch-line-toolbar" style="display:none; position:absolute; top:8px; right:8px; background:white; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.3); padding:6px; gap:6px; z-index:50; align-items:center;">
+                    <!-- 【Phase 6.50】連続線を描いている間だけ表示する完了・中止ボタン。従来キャンバス内の
+                         絶対配置（右上固定）だったが、描いている線の終点が右上付近に来ると重なって
+                         操作しづらいという指摘を受け、#sketch-text-toolbarと同じくツールバー行の
+                         余白への静的配置に統一した。描画中は#sketch-text-toolbar（編集用）は
+                         非表示のため、同じ場所を使っても表示が競合することはない。 -->
+                    <div id="sketch-line-toolbar" class="sketch-tool-group" style="display:none; margin-left:auto; gap:6px; align-items:center;">
                         <button type="button" class="btn-sub" style="width:auto; padding:4px 10px; font-size:0.8rem; background:#e74c3c;" onclick="sketchApp.cancelPolyline()">中止</button>
                         <button type="button" class="btn-main" style="width:auto; padding:4px 10px; font-size:0.8rem;" onclick="sketchApp.finishPolyline()">完了</button>
                     </div>
+                </div>
+                <div class="sketch-canvas-container">
+                    <canvas id="sketch-canvas" class="sketch-canvas"></canvas>
                 </div>
                 <!-- 文字入力モーダル（複数行対応。従来のprompt()に代わるもの） -->
                 <div id="sketch-text-modal" class="custom-modal-overlay">
@@ -743,8 +747,8 @@ canvas.sketch-canvas { display: block; width: 100%; }
         <div class="accordion-content" style="padding:10px; overflow:hidden;">
             <div class="spec-container" style="padding: 10px; color: #333; font-size: 0.9rem;">
     <div class="spec-header" style="border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px;">
-        <h2>被災状況調査システム 開発仕様書 (Phase 6.49)</h2>
-        <p><strong>Last Updated:</strong> Phase 6.49（白紙メモの編集モードで出る浮動ツールバー（✏️➕✂️🗑等）の置き場所を再修正。Phase 6.48でキャンバス直下（外側）に出す方式にしたが、今度はその下の「全消去」「写真に保存」ボタンと重なる余地が残っていた。ツールバーをキャンバス内の絶対配置から、ツールバー行（色選択・戻るボタンの右の余白）内の静的配置に変更し、キャンバスにも他のボタンにも一切重ならないようにした。詳細5.52）</p>
+        <h2>被災状況調査システム 開発仕様書 (Phase 6.50)</h2>
+        <p><strong>Last Updated:</strong> Phase 6.50（白紙メモ・連続線を描いている間に出る「中止」「完了」ボタン（#sketch-line-toolbar）も、Phase 6.49で編集用ツールバーに適用したのと同じ、ツールバー行の余白への静的配置に変更。キャンバス内の絶対配置（右上固定）をやめたことで、描いている線の終点が右上付近に来てもボタンと重ならなくなった。詳細5.53）</p>
         <p><strong>Status:</strong> App A β版運用中</p>
     </div>
 
@@ -1501,6 +1505,20 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>影響:</strong> ツールバーが常にツールバー行（画面上部）に固定され、選択中の要素の近くには出なくなった。位置が一定になったことで、毎回どこを見ればよいか分かりやすくなる一方、選択した要素から視線移動の距離がやや遠くなる。</li>
             <li><strong>実機確認が必要な点:</strong> 文字要素・線要素のどちらを選択してもツールバーが色選択・戻るボタンの右の余白に表示され、キャンバスにも「全消去」「写真に保存」ボタンにも重ならないこと。狭い画面幅（スマートフォン等）で、ツールバーの6個のボタンが折り返さずに収まること、または折り返した場合でもレイアウトが崩れないこと。</li>
         </ul>
+
+        <h4>5.53 白紙メモ・連続線描画中の完了/中止ボタンも同じ余白へ（Phase 6.50）</h4>
+        <ul>
+            <li><strong>報告内容:</strong> 「編集のとき」と伝えて5.49〜5.52の対応をしてもらったが、線を描いている最中に出る「中止」「完了」ボタン（<code>#sketch-line-toolbar</code>）も同じように直してほしいという依頼。編集用ツールバー（<code>#sketch-text-toolbar</code>）とは別の要素で、Phase 6.49の対応時は対象に含めていなかった。</li>
+            <li><strong>原因:</strong> <code>#sketch-line-toolbar</code>は、連続線（線ツール）を描いている間だけ表示する「中止」「完了」ボタンで、従来から<code>.sketch-canvas-container</code>内の絶対配置（<code>position:absolute; top:8px; right:8px</code>＝キャンバス右上固定）のままだった。描いている線の終点がキャンバス右上付近に来ると、このボタンと重なって操作しづらい場合があった。</li>
+            <li><strong>修正内容:</strong>
+                <ul>
+                    <li><strong>introduction.html:</strong> <code>#sketch-line-toolbar</code>を<code>.sketch-canvas-container</code>内から、ツールバー行（<code>.sketch-toolbar</code>）内の<code>#sketch-text-toolbar</code>の直後へ移動した。<code>class="sketch-tool-group"</code>を付け、<code>position:absolute</code>等を削除し、<code>margin-left:auto</code>でツールバー行の右端（色選択・戻るボタンの右の余白）に寄せる、<code>#sketch-text-toolbar</code>と同じ静的配置にした。ボタンの中身（中止・完了）・onclickは変更していない。</li>
+                    <li><strong>1_script_sketch.js:</strong> <code>showLineToolbar()</code>・<code>hideLineToolbar()</code>は元々<code>display</code>の切り替えのみで、位置を計算する処理は無かったため変更していない。</li>
+                </ul>
+            </li>
+            <li><strong>表示の競合について:</strong> <code>#sketch-text-toolbar</code>（編集用）と<code>#sketch-line-toolbar</code>（連続線描画中用）は同じ余白（<code>margin-left:auto</code>）を使うが、連続線を描いている間は編集モードの要素選択状態ではないため、2つが同時に表示されることは無い。</li>
+            <li><strong>実機確認が必要な点:</strong> 線ツールで連続線を描いている間、「中止」「完了」ボタンが色選択・戻るボタンの右の余白に表示され、描いている線のどの位置を終点にしてもボタンと重ならないこと。編集用ツールバー（✏️➕✂️🗑等）と表示が競合しないこと。</li>
+        </ul>
     </div>
 
     <div class="spec-section">
@@ -1573,6 +1591,7 @@ canvas.sketch-canvas { display: block; width: 100%; }
             <li><strong>【Phase 6.47完了・実機確認待ち】</strong>白紙メモの編集モードに、既存の線へ頂点を追加する「➕」ボタンを追加。実機で、➕を押した直後の1タップで意図した位置に頂点が追加されること、線から離れた場所をタップした場合は追加されずトーストが出ること、追加直後にそのままドラッグで微調整できることを確認する必要あり。詳細は5.50参照。</li>
             <li><strong>【Phase 6.48完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバス内の固定位置（右上）からキャンバスの直下（完全に外側）へ移動。詳細は5.51参照（Phase 6.49でさらに変更済み）。</li>
             <li><strong>【Phase 6.49完了・実機確認待ち】</strong>白紙メモの編集モードの浮動ツールバー（✏️➕✂️🗑等）を、キャンバスの直下（絶対配置）から、ツールバー行（色選択・戻るボタンの右の余白）内の静的配置へ変更。実機で、文字要素・線要素のどちらを選んでもツールバーがその余白に表示され、キャンバス・他のボタンのどちらにも重ならないこと、狭い画面幅でもレイアウトが崩れないことを確認する必要あり。詳細は5.52参照。</li>
+            <li><strong>【Phase 6.50完了・実機確認待ち】</strong>白紙メモ・連続線描画中の「中止」「完了」ボタン（#sketch-line-toolbar）も、編集用ツールバーと同じツールバー行の余白への静的配置に変更。実機で、線を描いている間、ボタンが色選択・戻るボタンの右の余白に表示され、描いている線のどの位置を終点にしても重ならないこと、編集用ツールバーと表示が競合しないことを確認する必要あり。詳細は5.53参照。</li>
             <li><strong>【AppB確認待ち】</strong>一括ZIP（外側ZIPの中に現場ごとのフォルダ）をAppBが読み込めるか。読めない場合は、AppB側の改修か、AppA側を「個別ZIP」運用に絞るかの判断が必要（8.2・8.3参照）。</li>
             <li><strong>【Phase 6.21完了】保存済みの初期値の閲覧UI:</strong> 「初期値の設定」アコーディオン内、「初期値の読み込み」ボタンの下に、保存済みの初期値の一覧表示欄を追加（5.32参照）。管理タブの項目整理（ファイル名構成・地図キャッシュ開放を「設定」へ移動、「入出力データ設定」を「初期値の設定」に改名）もあわせて実施。実機での見え方の確認が必要。</li>
         </ul>
